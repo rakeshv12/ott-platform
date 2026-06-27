@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ott-backend
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/YOUR_USERNAME/YOUR_REPO.git  # replace this
+    targetRevision: main
+    path: k8s/ott-backend
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ott-backend
+  syncPolicy:
+    automated:
+      prune: true       # removes resources deleted from git
+      selfHeal: true    # reverts manual kubectl changes
+    syncOptions:
+      - CreateNamespace=true
