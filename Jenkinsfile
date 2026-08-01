@@ -33,17 +33,7 @@ pipeline {
             }
         }
 
-        stage('Build Frontend') {
-            steps {
-                echo 'Building Frontend image...'
-                dir('frontend/web') {
-                    script {
-                        frontendImage = docker.build("${FRONTEND_IMAGE}:${IMAGE_TAG}")
-                    }
-                }
-            }
-        }
-
+        
         stage('Push to Docker Hub') {
             steps {
                 echo 'Pushing images to Docker Hub...'
