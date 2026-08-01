@@ -38,7 +38,7 @@ pipeline {
             steps {
                 echo 'Pushing images to Docker Hub...'
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-creds') {
+                    docker.withRegistry('https://index.docker.io/v1/', 'Docker') {
                         authImage.push("${IMAGE_TAG}")
                         frontendImage.push("${IMAGE_TAG}")
                         authImage.push('latest')
