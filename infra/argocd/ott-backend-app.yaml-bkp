@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/rakeshv12/ott-platform.git
+    repoURL: https://github.com/rakeshv12/ott-platform.git  # replace this
     targetRevision: main
     path: k8s/ott-backend
   destination:
@@ -14,7 +14,7 @@ spec:
     namespace: ott-backend
   syncPolicy:
     automated:
-      prune: true
-      selfHeal: true
+      prune: true       # removes resources deleted from git
+      selfHeal: true    # reverts manual kubectl changes
     syncOptions:
       - CreateNamespace=true
