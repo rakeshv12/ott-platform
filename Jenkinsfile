@@ -40,12 +40,18 @@ pipeline {
         stage('Push Manifests to GitHub') {
             steps {
                 echo 'Committing updated manifests...'
+                script {
+            withCredentials([usernamePassword(
+                credentialsId: 'gitcred',
+                usernameVariable: 'GIT_USER',
+                passwordVariable: 'GIT_PASS'
+            )]) {
                 bat """
                     git config user.email "jenkins@ott-platform.com"
                     git config user.name "Jenkins CI"
                     git add k8s/ott-backend/auth-deployment.yaml
                     git commit -m "ci: update auth image tag to build ${IMAGE_TAG}"
-                    git push origin main
+                    git push https://%GIT_USER%:%GIT_PASS%@github.com/rakeshv12/ott-platform.git main
                 """
             }
         }
