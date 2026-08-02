@@ -53,6 +53,7 @@ pipeline {
                     git commit -m "ci: update auth image tag to build ${IMAGE_TAG}"
                     git push https://%GIT_USER%:%GIT_PASS%@github.com/rakeshv12/ott-platform.git main
                 """
+             }
             }
         }
     }
