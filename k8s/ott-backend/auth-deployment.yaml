@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: auth-service
-          image: rakeshv12/ott-auth-service:100
+          image: rakeshv12/ott-auth-service:101
           ports:
             - containerPort: 3001
           env:
