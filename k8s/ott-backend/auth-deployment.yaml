@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: auth-service
-          image: YOUR_REGISTRY/ott-auth-service:26
+          image: YOUR_REGISTRY/ott-auth-service:27
           ports:
             - containerPort: 3001
           env:
