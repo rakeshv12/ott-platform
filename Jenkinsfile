@@ -26,7 +26,7 @@ pipeline {
                 dir('backend/auth') {
                     script {
                         def authImage = docker.build("${AUTH_IMAGE}:${IMAGE_TAG}")
-                        docker.withRegistry('https://index.docker.io/v1/', 'Docker') {
+                        docker.withRegistry('https://index.docker.io/v1/', 'f1157c26-4e93-4c70-862c-d4e4c0128e81') {
                             authImage.push("${IMAGE_TAG}")
                             authImage.push('latest')
                         }
