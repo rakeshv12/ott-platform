@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/YOUR_USERNAME/YOUR_REPO.git  # replace this
+    repoURL: https://github.com/rakeshv12/ott-platform.git  # replace this
     targetRevision: main
     path: k8s/ott-backend
   destination:
