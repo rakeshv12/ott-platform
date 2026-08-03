@@ -1,0 +1,99 @@
+.page {
+  min-height: 100vh;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+}
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 10;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+}
+.back {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.7);
+  transition: color 0.2s;
+}
+.back:hover { color: #fff; }
+.logoSmall {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  letter-spacing: 0.12em;
+  background: linear-gradient(135deg, var(--violet), var(--rose));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.playerWrap { flex: 1; background: #000; }
+.player {
+  width: 100%;
+  aspect-ratio: 16/9;
+  max-height: 70vh;
+  background: #050508;
+  position: relative;
+  overflow: hidden;
+}
+.playerPlaceholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+.playerIcon { color: rgba(124,58,237,0.6); }
+.playerNote { font-size: 1rem; font-weight: 600; color: rgba(255,255,255,0.5); }
+.playerSub { font-size: 0.8rem; color: rgba(255,255,255,0.25); }
+.info {
+  display: flex;
+  justify-content: space-between;
+  padding: 2rem 4rem;
+  gap: 2rem;
+  background: var(--bg);
+}
+.title {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  color: var(--white);
+  margin-bottom: 0.75rem;
+}
+.meta {
+  display: flex;
+  gap: 0.8rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-bottom: 1rem;
+}
+.metaBadge {
+  background: var(--violet);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 3px;
+}
+.desc { font-size: 0.9rem; color: rgba(241,240,255,0.65); line-height: 1.7; }
+.infoRight { display: flex; gap: 0.75rem; padding-top: 0.5rem; }
+.actionBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: color 0.2s, border-color 0.2s;
+}
+.actionBtn:hover { color: var(--white); border-color: var(--violet); }
