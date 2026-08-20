@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: ott-platform-parent
+  name: ott-platform-parent-storage
   namespace: argocd
 spec:
   project: default
