@@ -13,6 +13,8 @@ spec:
       labels:
         app: frontend-web
     spec:
+      imagePullSecrets:
+        - name: my-docker
       containers:
         - name: frontend-web
           image: rakeshv12/ott-frontend-web:latest
