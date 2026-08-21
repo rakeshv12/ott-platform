@@ -54,8 +54,8 @@ pipeline {
                         passwordVariable: 'GIT_PASS'
                     )]) {
                         bat """
-                            git config user.email "jenkins@ott-platform.com"
-                            git config user.name "Jenkins CI"
+                            git config user.email "sairakeshkumar91@gmail.com"
+                            git config user.name "rakeshv12"
                             git add k8s\\ott-frontend\\frontend-deployment.yaml
                             git diff --cached --quiet || git commit -m "ci: update frontend image tag to build ${IMAGE_TAG}"
                             git push https://%GIT_USER%:%GIT_PASS%@github.com/rakeshv12/ott-platform.git main
