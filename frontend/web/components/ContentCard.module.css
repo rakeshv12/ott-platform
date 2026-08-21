@@ -1,0 +1,30 @@
+.card { display: block; flex-shrink: 0; width: 180px; transition: transform 0.35s; }
+.card:hover { transform: scale(1.06); z-index: 2; }
+.thumb { position: relative; border-radius: 10px; overflow: hidden; aspect-ratio: 2/3; background: var(--bg-card); }
+.thumb img { width: 100%; height: 100%; object-fit: cover; transition: filter 0.35s; }
+.card:hover .thumb img { filter: brightness(0.55); }
+.overlay {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 0.5rem; opacity: 0; transition: opacity 0.3s;
+}
+.card:hover .overlay { opacity: 1; }
+.playBtn {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: rgba(124,58,237,0.9); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.2s;
+}
+.playBtn:hover { transform: scale(1.1); }
+.meta { display: flex; gap: 0.5rem; font-size: 0.7rem; font-weight: 600; color: var(--white); }
+.rating { background: rgba(232,168,124,0.85); color: #000; padding: 0.1rem 0.35rem; border-radius: 3px; }
+.badge {
+  position: absolute; top: 8px; left: 8px;
+  font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; background: var(--violet); color: #fff;
+  padding: 0.2rem 0.5rem; border-radius: 4px;
+}
+.info { padding: 0.6rem 0.2rem 0; }
+.title { font-size: 0.85rem; font-weight: 600; color: var(--white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.genre { font-size: 0.72rem; color: var(--muted); margin-top: 0.15rem; }
+@media (max-width: 768px) { .card { width: 140px; } }

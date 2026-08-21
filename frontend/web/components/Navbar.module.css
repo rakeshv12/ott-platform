@@ -1,0 +1,85 @@
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 1.25rem 4rem;
+  transition: background 0.4s, backdrop-filter 0.4s;
+}
+.nav.scrolled {
+  background: var(--bg-nav);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+.logo {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  letter-spacing: 0.12em;
+  background: linear-gradient(135deg, var(--violet), var(--rose));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  flex-shrink: 0;
+}
+.links {
+  display: flex;
+  list-style: none;
+  gap: 2rem;
+  margin-left: 1rem;
+}
+.links a {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--muted);
+  transition: color 0.2s;
+}
+.links a:hover { color: var(--white); }
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+.searchBtn { color: var(--muted); padding: 0.4rem; transition: color 0.2s; }
+.searchBtn:hover { color: var(--white); }
+.btnOutline {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.5rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--white);
+  transition: border-color 0.2s, background 0.2s;
+}
+.btnOutline:hover { border-color: var(--violet); background: rgba(124,58,237,0.1); }
+.btnFill {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  background: var(--violet);
+  color: #fff;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.btnFill:hover { opacity: 0.88; transform: translateY(-1px); }
+.burger { display: none; flex-direction: column; gap: 5px; padding: 4px; }
+.burger span { display: block; width: 22px; height: 2px; background: var(--white); border-radius: 2px; }
+.open { display: flex; }
+@media (max-width: 768px) {
+  .nav { padding: 1rem 1.5rem; }
+  .links {
+    display: none;
+    position: fixed;
+    top: 64px; left: 0; right: 0;
+    flex-direction: column;
+    background: var(--bg-card);
+    padding: 2rem;
+    gap: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .links.open { display: flex; }
+  .burger { display: flex; }
+  .btnOutline { display: none; }
+}
