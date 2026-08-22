@@ -21,7 +21,7 @@ spec:
         - name: my-docker
       containers:
         - name: catalog-service
-          image: rakeshv12/ott-catalog-service:latest
+          image: rakeshv12/ott-catalog-service:2
           ports:
             - containerPort: 3002
           env:
