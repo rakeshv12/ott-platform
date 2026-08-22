@@ -1,0 +1,82 @@
+pipeline {
+    agent {
+        label 'built-in'
+    }
+
+    triggers {
+        pollSCM('H/5 * * * *')
+    }
+
+    environment {
+        CATALOG_IMAGE = "rakeshv12/ott-catalog-service"
+        IMAGE_TAG     = "${BUILD_NUMBER}"
+        GITHUB_REPO   = 'https://github.com/rakeshv12/ott-platform.git'
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                echo 'Pulling latest code from GitHub...'
+                git branch: 'main', url: "${GITHUB_REPO}"
+            }
+        }
+
+        stage('Build Catalog Service') {
+            steps {
+                echo 'Building Catalog Service image...'
+                dir('backend/catalog') {
+                    script {
+                        def catalogImage = docker.build("${CATALOG_IMAGE}:${IMAGE_TAG}")
+                        docker.withRegistry('https://index.docker.io/v1/', 'f1157c26-4e93-4c70-862c-d4e4c0128e81') {
+                            catalogImage.push("${IMAGE_TAG}")
+                            catalogImage.push('latest')
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Update Manifests') {
+            steps {
+                echo 'Updating K8s image tag...'
+                bat """
+                    powershell -Command "(Get-Content k8s\\ott-backend\\catalog-deployment.yaml) -replace 'ott-catalog-service:.*', 'ott-catalog-service:${IMAGE_TAG}' | Set-Content k8s\\ott-backend\\catalog-deployment.yaml"
+                """
+            }
+        }
+
+        stage('Push Manifests to GitHub') {
+            steps {
+                echo 'Committing updated manifests...'
+                script {
+                    withCredentials([usernamePassword(
+                        credentialsId: 'gitcred',
+                        usernameVariable: 'GIT_USER',
+                        passwordVariable: 'GIT_PASS'
+                    )]) {
+                        bat """
+                            git config user.email "sairakeshkumar91@gmail.com"
+                            git config user.name "rakeshv12"
+                            git add k8s\\ott-backend\\catalog-deployment.yaml
+                            git diff --cached --quiet || git commit -m "ci: update catalog image tag to build ${IMAGE_TAG}"
+                            git push https://%GIT_USER%:%GIT_PASS%@github.com/rakeshv12/ott-platform.git main
+                        """
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "SUCCESS - Catalog Service Build ${IMAGE_TAG} deployed"
+        }
+        failure {
+            echo 'FAILED - check stage logs above'
+        }
+        always {
+            bat "docker rmi ${CATALOG_IMAGE}:${IMAGE_TAG} || exit 0"
+        }
+    }
+}
