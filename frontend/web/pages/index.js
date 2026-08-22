@@ -1,34 +1,10 @@
 import Head from 'next/head'
-import { useEffect, useState } from 'react'
 import Navbar from '../components/Navbar'
 import Hero from '../components/Hero'
 import ContentRow from '../components/ContentRow'
 import styles from '../styles/Home.module.css'
 
-export default function Home() {
-  const [movies, setMovies] = useState([])
-  const [series, setSeries] = useState([])
-  const [trending, setTrending] = useState([])
-
-  useEffect(() => {
-    const API = process.env.NEXT_PUBLIC_CATALOG_API
-
-    fetch(`${API}/catalog/movies`)
-      .then(r => r.json())
-      .then(setMovies)
-      .catch(console.error)
-
-    fetch(`${API}/catalog/series`)
-      .then(r => r.json())
-      .then(setSeries)
-      .catch(console.error)
-
-    fetch(`${API}/catalog/trending`)
-      .then(r => r.json())
-      .then(setTrending)
-      .catch(console.error)
-  }, [])
-
+export default function Home({ movies, series, trending }) {
   return (
     <>
       <Head>
@@ -49,4 +25,25 @@ export default function Home() {
       </footer>
     </>
   )
+}
+
+export async function getServerSideProps() {
+  const API = process.env.CATALOG_API || 'http://catalog-service.ott-backend.svc.cluster.local:3002'
+
+  try {
+    const [moviesRes, seriesRes, trendingRes] = await Promise.all([
+      fetch(`${API}/catalog/movies`),
+      fetch(`${API}/catalog/series`),
+      fetch(`${API}/catalog/trending`),
+    ])
+
+    const movies   = await moviesRes.json()
+    const series   = await seriesRes.json()
+    const trending = await trendingRes.json()
+
+    return { props: { movies, series, trending } }
+  } catch (err) {
+    console.error('Catalog API error:', err)
+    return { props: { movies: [], series: [], trending: [] } }
+  }
 }
