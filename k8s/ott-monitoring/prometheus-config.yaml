@@ -25,10 +25,18 @@ data:
             regex: __meta_kubernetes_node_label_(.+)
 
       # Scrape all pods that have annotation
-      # prometheus.io/scrape: "true"
+        prometheus.io/scrape: "true"
       - job_name: 'kubernetes-pods'
         kubernetes_sd_configs:
           - role: pod
+            namespaces:
+              names:
+                - ott-backend
+                - ott-frontend
+                - ott-monitoring
+                - kube-system
+                - argocd
+                - istio-system
         relabel_configs:
           - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
             action: keep
@@ -42,6 +50,15 @@ data:
             target_label: __address__
             regex: ([^:]+)(?::\d+)?;(\d+)
             replacement: $1:$2
+          - source_labels: [__meta_kubernetes_pod_phase]
+            action: keep
+            regex: Running
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          - source_labels: [__meta_kubernetes_pod_container_name]
+            target_label: container
 
       # Scrape auth service
       - job_name: 'ott-auth-service'
