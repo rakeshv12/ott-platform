@@ -25,7 +25,7 @@ data:
             regex: __meta_kubernetes_node_label_(.+)
 
       # Scrape all pods that have annotation
-        prometheus.io/scrape: "true"
+      #  prometheus.io/scrape: "true"
       - job_name: 'kubernetes-pods'
         kubernetes_sd_configs:
           - role: pod
