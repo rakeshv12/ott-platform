@@ -53,6 +53,14 @@ spec:
         - name: prometheus-config
           configMap:
             name: prometheus-config
+  volumeClaimTemplates:       # ← THIS belongs here, at StatefulSet spec level
+    - metadata:
+        name: prometheus-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi
 ---
 apiVersion: v1
 kind: Service
@@ -66,11 +74,3 @@ spec:
   ports:
     - port: 9090
       targetPort: 9090
-  volumeClaimTemplates:
-    - metadata:
-        name: prometheus-data
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        resources:
-          requests:
-            storage: 10Gi
