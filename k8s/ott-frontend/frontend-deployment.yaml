@@ -23,6 +23,8 @@ spec:
           env:
             - name: NEXT_PUBLIC_AUTH_API
               value: "http://auth-service.ott-backend.svc.cluster.local:3001"
+            - name: NEXT_PUBLIC_CATALOG_API
+              value: "http://catalog-service.ott-backend.svc.cluster.local:3002"
           resources:
             requests:
               memory: "256Mi"
