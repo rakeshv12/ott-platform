@@ -3,6 +3,7 @@ const { Pool } = require('pg');
 const redis = require('redis');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const promClient = require('prom-client')
 const { body, validationResult } = require('express-validator');
 
 const app = express();
@@ -149,3 +150,11 @@ app.listen(PORT, async () => {
   await initDB();
   console.log(`Auth service running on port ${PORT}`);
 });
+
+// Prometheus metrics
+promClient.collectDefaultMetrics({ prefix: 'ott_auth_' })
+
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', promClient.register.contentType)
+  res.send(await promClient.register.metrics())
+})
