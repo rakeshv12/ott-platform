@@ -5,7 +5,7 @@ metadata:
   namespace: ott-monitoring
 spec:
   serviceName: prometheus
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: prometheus
