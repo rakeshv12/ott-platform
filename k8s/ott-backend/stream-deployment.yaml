@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stream-service
+  namespace: ott-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: stream-service
+  template:
+    metadata:
+      labels:
+        app: stream-service
+    spec:
+      imagePullSecrets:
+        - name: my-docker
+      containers:
+        - name: stream-service
+          image: rakeshv12/ott-stream-service:latest
+          ports:
+            - containerPort: 3003
+          env:
+            - name: MINIO_HOST
+              value: "minio.ott-media.svc.cluster.local"
+            - name: MINIO_PORT
+              value: "9000"
+            - name: MINIO_ROOT_USER
+              value: "minioadmin"
+            - name: MINIO_ROOT_PASSWORD
+              value: "minioadmin123"
+            - name: PORT
+              value: "3003"
+          livenessProbe:  
+            httpGet:
+              path: /health
+              port: 3003
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3003
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stream-service
+  namespace: ott-backend
+spec:
+  selector:
+    app: stream-service
+  ports:
+    - port: 3003
+      targetPort: 3003
