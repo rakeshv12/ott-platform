@@ -4,7 +4,7 @@ metadata:
   name: minio
   namespace: ott-media
 spec:
-  replicas: 2
+  replicas: 1
   serviceName: minio
   selector:
     matchLabels:
