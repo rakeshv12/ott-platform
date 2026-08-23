@@ -3,7 +3,7 @@ pipeline {
         label 'built-in'
     }
     triggers{
-       // pollSCM('H/5 * * * *')
+       pollSCM('H/5 * * * *')
     }
     environment{
         STREAM_IMAGE  = "rakeshv12/ott-stream-service"
