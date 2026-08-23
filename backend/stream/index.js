@@ -60,7 +60,7 @@ async function createTranscodeJob(videoId) {
               chmod +x /usr/local/bin/mc &&
               mc alias set minio http://$MINIO_HOST:$MINIO_PORT $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD &&
               mc cp minio/${RAW_BUCKET}/${videoId}/ /tmp/input/ --recursive &&
-              INPUT=$(ls /tmp/input/${videoId}/*) &&
+              INPUT=$(ls /tmp/input/*) &&
               mkdir -p /tmp/output/${videoId} &&
               ffmpeg -i "$INPUT" \
                 -vf scale=1280:720 -b:v 2800k -b:a 128k \
