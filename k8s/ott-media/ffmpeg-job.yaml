@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: transcode-job
+  namespace: ott-media
+spec:
+  template:
+    metadata:
+      labels:
+        app: transcode-job
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: transcode-job
+          image: jrottenberg/ffmpeg:4.4-alpine
+          command: ["/bin/sh", "-c"]
+          args: ["echo transcoding $VIDEO_ID"]
+          env:
+            - name: MINIO_HOST
+              value: "minio.ott-media.svc.cluster.local"
+            - name: MINIO_PORT
+              value: "9000"
+            - name: MINIO_ROOT_USER
+              value: "minioadmin"
+            - name: MINIO_ROOT_PASSWORD
+              value: "minioadmin123"
+            - name: VIDEO_ID
+              value: "placeholder"
+            - name: RAW_BUCKET
+              value: "raw-videos"
+            - name: HLS_BUCKET
+              value: "hls-videos"
