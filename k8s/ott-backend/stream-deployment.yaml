@@ -13,7 +13,7 @@ spec:
       labels:
         app: stream-service
     spec:
-      ServiceAccount: stream-service
+      ServiceAccountName: stream-service
       imagePullSecrets:
         - name: my-docker
       containers:
