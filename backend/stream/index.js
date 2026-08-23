@@ -3,6 +3,7 @@ const Minio = require('minio')
 const multer = require('multer')
 const { v4: uuidv4 } = require('uuid')
 const promClient = require('prom-client')
+const k8s = require('@kubernetes/client-node')
 
 const app = express()
 app.use(express.json())
@@ -13,6 +14,11 @@ app.get('/metrics', async (req, res) => {
   res.set('Content-Type', promClient.register.contentType)
   res.send(await promClient.register.metrics())
 })
+
+// ── Kubernetes client ─────────────────────────────────────
+const kc = new k8s.KubeConfig()
+kc.loadFromCluster()
+const batchV1Api = kc.makeApiClient(k8s.BatchV1Api)
 
 // ── MinIO client ──────────────────────────────────────────
 const minioClient = new Minio.Client({
@@ -26,8 +32,70 @@ const minioClient = new Minio.Client({
 const RAW_BUCKET = 'raw-videos'
 const HLS_BUCKET = 'hls-videos'
 
-// ── Multer — handle file uploads in memory ────────────────
+// ── Multer ────────────────────────────────────────────────
 const upload = multer({ storage: multer.memoryStorage() })
+
+// ── Create transcoding Job ────────────────────────────────
+async function createTranscodeJob(videoId) {
+  const jobManifest = {
+    apiVersion: 'batch/v1',
+    kind: 'Job',
+    metadata: {
+      name: `transcode-${videoId.substring(0, 8)}`,
+      namespace: 'ott-media',
+    },
+    spec: {
+      template: {
+        metadata: {
+          labels: { app: 'transcode-job' }
+        },
+        spec: {
+          restartPolicy: 'Never',
+          containers: [{
+            name: 'ffmpeg',
+            image: 'jrottenberg/ffmpeg:4.4-alpine',
+            command: ['/bin/sh', '-c'],
+            args: [`
+              wget https://dl.min.io/client/mc/release/linux-amd64/mc -O /usr/local/bin/mc &&
+              chmod +x /usr/local/bin/mc &&
+              mc alias set minio http://$MINIO_HOST:$MINIO_PORT $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD &&
+              mc cp minio/${RAW_BUCKET}/${videoId}/ /tmp/input/ --recursive &&
+              INPUT=$(ls /tmp/input/${videoId}/*) &&
+              mkdir -p /tmp/output/${videoId} &&
+              ffmpeg -i "$INPUT" \
+                -vf scale=1280:720 -b:v 2800k -b:a 128k \
+                -f hls -hls_time 6 -hls_list_size 0 \
+                -hls_segment_filename "/tmp/output/${videoId}/720p_%03d.ts" \
+                /tmp/output/${videoId}/720p.m3u8 &&
+              ffmpeg -i "$INPUT" \
+                -vf scale=640:360 -b:v 800k -b:a 96k \
+                -f hls -hls_time 6 -hls_list_size 0 \
+                -hls_segment_filename "/tmp/output/${videoId}/360p_%03d.ts" \
+                /tmp/output/${videoId}/360p.m3u8 &&
+              cat > /tmp/output/${videoId}/master.m3u8 << EOF
+#EXTM3U
+#EXT-X-STREAM-INF:BANDWIDTH=2800000,RESOLUTION=1280x720
+720p.m3u8
+#EXT-X-STREAM-INF:BANDWIDTH=800000,RESOLUTION=640x360
+360p.m3u8
+EOF
+              mc cp /tmp/output/${videoId}/ minio/${HLS_BUCKET}/${videoId}/ --recursive
+            `],
+            env: [
+              { name: 'MINIO_HOST', value: process.env.MINIO_HOST || 'minio.ott-media.svc.cluster.local' },
+              { name: 'MINIO_PORT', value: process.env.MINIO_PORT || '9000' },
+              { name: 'MINIO_ROOT_USER', value: process.env.MINIO_ROOT_USER || 'minioadmin' },
+              { name: 'MINIO_ROOT_PASSWORD', value: process.env.MINIO_ROOT_PASSWORD || 'minioadmin123' },
+            ]
+          }]
+        }
+      }
+    }
+  }
+
+  await batchV1Api.createNamespacedJob('ott-media', jobManifest)
+  console.log(`Transcoding job created for videoId: ${videoId}`)
+}
 
 // ── Health check ──────────────────────────────────────────
 app.get('/health', (req, res) => res.json({ status: 'ok', service: 'stream' }))
@@ -37,23 +105,25 @@ app.post('/stream/upload', upload.single('video'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' })
 
-    const videoId   = uuidv4()
-    const fileName  = `${videoId}/${req.file.originalname}`
-    const metaData  = { 'Content-Type': req.file.mimetype }
+    const videoId  = uuidv4()
+    const fileName = `${videoId}/${req.file.originalname}`
 
     await minioClient.putObject(
       RAW_BUCKET,
       fileName,
       req.file.buffer,
       req.file.size,
-      metaData
+      { 'Content-Type': req.file.mimetype }
     )
+
+    // Automatically create transcoding job
+    await createTranscodeJob(videoId)
 
     res.status(201).json({
       videoId,
       fileName,
-      message: 'Video uploaded successfully — transcoding will begin shortly',
-      status: 'uploaded'
+      message: 'Video uploaded — transcoding job started',
+      status: 'processing'
     })
   } catch (err) {
     console.error('Upload error:', err)
@@ -67,40 +137,31 @@ app.get('/stream/:videoId', async (req, res) => {
     const { videoId } = req.params
     const manifestKey = `${videoId}/master.m3u8`
 
-    // Check if HLS manifest exists
     await minioClient.statObject(HLS_BUCKET, manifestKey)
 
-    // Generate presigned URL valid for 1 hour
     const url = await minioClient.presignedGetObject(HLS_BUCKET, manifestKey, 3600)
 
-    res.json({
-      videoId,
-      manifestUrl: url,
-      status: 'ready'
-    })
+    res.json({ videoId, manifestUrl: url, status: 'ready' })
   } catch (err) {
     if (err.code === 'NotFound') {
       return res.status(404).json({
-        error: 'Stream not ready yet — transcoding may still be in progress',
+        error: 'Stream not ready yet',
         status: 'processing'
       })
     }
-    console.error('Stream error:', err)
     res.status(500).json({ error: 'Server error' })
   }
 })
 
-// ── List all videos ───────────────────────────────────────
+// ── List videos ───────────────────────────────────────────
 app.get('/stream', async (req, res) => {
   try {
     const objects = []
     const stream  = minioClient.listObjects(RAW_BUCKET, '', true)
-
     stream.on('data', obj => objects.push(obj))
     stream.on('end', () => res.json(objects))
     stream.on('error', err => { throw err })
   } catch (err) {
-    console.error('List error:', err)
     res.status(500).json({ error: 'Server error' })
   }
 })
