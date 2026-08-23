@@ -1,0 +1,77 @@
+pipeline {
+    agent {
+        label 'built-in'
+    }
+    triggers{
+        pollSCM('H/5 * * * *')
+    }
+    environment{
+        STREAM_IMAGE  = "rakeshv12/ott-stream-service"
+        IMAGE_TAG   = "${BUILD_NUMBER}"
+        GITHUB_REPO = 'https://github.com/rakeshv12/ott-platform.git'
+    }
+    stages{
+        stage('Checkout') {
+            steps{
+                echo "pull latest code from git repository"
+                git branch: 'main', url: "${GITHUB_REPO}"
+            }   
+        }
+        stage('Build stream service'){
+            steps{
+                echo 'Build Stream service image...'
+                dir('backend/stream') {
+                    script{
+                        def streamImage = docker.build("${STREAM_IMAGE}:${IMAGE_TAG}")
+                        docker.withRegistry('https://index.docker.io/v1/', 'f1157c26-4e93-4c70-862c-d4e4c0128e81') {
+                            streamImage.push("${IMAGE_TAG}")
+                            streamImage.push('latest')
+                        }
+                    }
+
+                }
+
+            }
+        }
+        stage('Update Manifests') {
+            steps {
+                echo 'Updating K8s image tag...'
+                bat """
+                    powershell -Command "(Get-Content k8s\\ott-backend\\stream-deployment.yaml) -replace 'ott-stream-service:.*', 'ott-stream-service:${IMAGE_TAG}' | Set-Content k8s\\ott-backend\\stream-deployment.yaml"
+                """
+            }
+        }
+        stage('Push Manifests to GitHub') {
+            steps {
+                echo 'Committing updated manifests...'
+                script {
+                    withCredentials([usernamePassword(
+                        credentialsId: 'gitcred',
+                        usernameVariable: 'GIT_USER',
+                        passwordVariable: 'GIT_PASS'
+                    )]) {
+                        bat """
+                            git config user.email "jenkins@ott-platform.com"
+                            git config user.name "Jenkins CI"
+                            git pull https://%GIT_USER%:%GIT_PASS%@github.com/rakeshv12/ott-platform.git main
+                            git add k8s/ott-backend/stream-deployment.yaml
+                            git diff --cached --quiet || git commit -m "ci: update auth image tag to build ${IMAGE_TAG}"
+                            git push https://%GIT_USER%:%GIT_PASS%@github.com/rakeshv12/ott-platform.git main
+                        """
+                    }
+                }
+            }
+        }
+    }
+    post {
+        success {
+            echo "SUCCESS - Stream Service Build ${IMAGE_TAG} pushed to Docker Hub and manifests updated"
+        }
+        failure {
+            echo 'FAILED - check stage logs above'
+        }
+        always {
+            bat "docker rmi ${STREAM_IMAGE}:${IMAGE_TAG} || exit 0"
+        }
+    }
+}
