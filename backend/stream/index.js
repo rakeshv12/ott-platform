@@ -171,3 +171,18 @@ const PORT = process.env.PORT || 3003
 app.listen(PORT, () => {
   console.log(`Stream service running on port ${PORT}`)
 })
+
+// Generate presigned URL with external IP
+const url = await minioClient.presignedGetObject(HLS_BUCKET, manifestKey, 3600)
+
+// Replace internal DNS with external IP
+const externalUrl = url.replace(
+  'minio.ott-media.svc.cluster.local:9000',
+  '192.168.1.246:9000'
+)
+
+res.json({
+  videoId,
+  manifestUrl: externalUrl,
+  status: 'ready'
+})
