@@ -17,7 +17,7 @@ spec:
         - name: my-docker
       containers:
         - name: stream-service
-          image: rakeshv12/ott-stream-service:5
+          image: rakeshv12/ott-stream-service:6
           ports:
             - containerPort: 3003
           env:
