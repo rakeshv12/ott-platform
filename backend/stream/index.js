@@ -56,7 +56,8 @@ async function createTranscodeJob(videoId) {
             image: 'jrottenberg/ffmpeg:4.4-alpine',
             command: ['/bin/sh', '-c'],
             args: [`
-              wget -q --no-check-certificate https://dl.min.io/client/mc/release/linux-amd64/mc -O /usr/local/bin/mc || \ wget -q https://github.com/minio/mc/releases/latest/download/mc.linux-amd64 -O /usr/local/bin/mc &&
+              wget -q --no-check-certificate https://dl.min.io/client/mc/release/linux-amd64/mc -O /usr/local/bin/mc || \
+              wget -q https://github.com/minio/mc/releases/latest/download/mc.linux-amd64 -O /usr/local/bin/mc &&
               chmod +x /usr/local/bin/mc &&
               mc alias set minio http://$MINIO_HOST:$MINIO_PORT $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD &&
               mc cp minio/${RAW_BUCKET}/${videoId}/ /tmp/input/ --recursive &&
@@ -116,7 +117,6 @@ app.post('/stream/upload', upload.single('video'), async (req, res) => {
       { 'Content-Type': req.file.mimetype }
     )
 
-    // Automatically create transcoding job
     await createTranscodeJob(videoId)
 
     res.status(201).json({
@@ -140,9 +140,13 @@ app.get('/stream/:videoId', async (req, res) => {
     await minioClient.statObject(HLS_BUCKET, manifestKey)
 
     const url = await minioClient.presignedGetObject(HLS_BUCKET, manifestKey, 3600)
-    const externalUrl = url.replace('minio.ott-media.svc.cluster.local:9000', '192.168.1.246:9000')
 
-    res.json({ videoId, manifestUrl: url, status: 'ready' })
+    const externalUrl = url.replace(
+      'minio.ott-media.svc.cluster.local:9000',
+      '192.168.1.246:9000'
+    )
+
+    res.json({ videoId, manifestUrl: externalUrl, status: 'ready' })
   } catch (err) {
     if (err.code === 'NotFound') {
       return res.status(404).json({
@@ -171,19 +175,4 @@ app.get('/stream', async (req, res) => {
 const PORT = process.env.PORT || 3003
 app.listen(PORT, () => {
   console.log(`Stream service running on port ${PORT}`)
-})
-
-// Generate presigned URL with external IP
-const url = await minioClient.presignedGetObject(HLS_BUCKET, manifestKey, 3600)
-
-// Replace internal DNS with external IP
-const externalUrl = url.replace(
-  'minio.ott-media.svc.cluster.local:9000',
-  '192.168.1.246:9000'
-)
-
-res.json({
-  videoId,
-  manifestUrl: externalUrl,
-  status: 'ready'
 })
