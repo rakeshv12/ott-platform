@@ -17,7 +17,7 @@ spec:
         - name: my-docker
       containers:
         - name: frontend-web
-          image: rakeshv12/ott-frontend-web:61
+          image: rakeshv12/ott-frontend-web:62
           ports:
             - containerPort: 3000
           env:
