@@ -140,6 +140,7 @@ app.get('/stream/:videoId', async (req, res) => {
     await minioClient.statObject(HLS_BUCKET, manifestKey)
 
     const url = await minioClient.presignedGetObject(HLS_BUCKET, manifestKey, 3600)
+    const externalUrl = url.replace('minio.ott-media.svc.cluster.local:9000', '192.168.1.246:9000')
 
     res.json({ videoId, manifestUrl: url, status: 'ready' })
   } catch (err) {
