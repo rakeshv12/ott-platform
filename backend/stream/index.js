@@ -56,7 +56,7 @@ async function createTranscodeJob(videoId) {
             image: 'jrottenberg/ffmpeg:4.4-alpine',
             command: ['/bin/sh', '-c'],
             args: [`
-              wget https://dl.min.io/client/mc/release/linux-amd64/mc -O /usr/local/bin/mc &&
+              wget -q --no-check-certificate https://dl.min.io/client/mc/release/linux-amd64/mc -O /usr/local/bin/mc || \ wget -q https://github.com/minio/mc/releases/latest/download/mc.linux-amd64 -O /usr/local/bin/mc &&
               chmod +x /usr/local/bin/mc &&
               mc alias set minio http://$MINIO_HOST:$MINIO_PORT $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD &&
               mc cp minio/${RAW_BUCKET}/${videoId}/ /tmp/input/ --recursive &&
