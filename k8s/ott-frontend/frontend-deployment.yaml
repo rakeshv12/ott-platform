@@ -25,6 +25,8 @@ spec:
               value: "http://auth-service.ott-backend.svc.cluster.local:3001"
             - name: CATALOG_API
               value: "http://catalog-service.ott-backend.svc.cluster.local:3002"
+            - name: STREAM_API
+              value: "http://stream-service.ott-backend.svc.cluster.local:3003"
           resources:
             requests:
               memory: "256Mi"
