@@ -32,6 +32,10 @@ spec:
               value: "minioadmin123"
             - name: PORT
               value: "3003"
+            - name: MINIO_EXTERNAL_HOST
+              value: "192.168.1.246"
+            - name: MINIO_EXTERNAL_PORT
+              value: "9000"
           livenessProbe:  
             httpGet:
               path: /health

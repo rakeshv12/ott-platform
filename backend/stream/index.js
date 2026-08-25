@@ -20,10 +20,19 @@ const kc = new k8s.KubeConfig()
 kc.loadFromCluster()
 const batchV1Api = kc.makeApiClient(k8s.BatchV1Api)
 
-// ── MinIO client ──────────────────────────────────────────
+// ── MinIO client (internal operations) ───────────────────
 const minioClient = new Minio.Client({
   endPoint:  process.env.MINIO_HOST || 'minio',
   port:      parseInt(process.env.MINIO_PORT) || 9000,
+  useSSL:    false,
+  accessKey: process.env.MINIO_ROOT_USER || 'minioadmin',
+  secretKey: process.env.MINIO_ROOT_PASSWORD || 'minioadmin123',
+})
+
+// ── MinIO client (external presigned URLs) ────────────────
+const minioExternalClient = new Minio.Client({
+  endPoint:  process.env.MINIO_EXTERNAL_HOST || '192.168.1.246',
+  port:      parseInt(process.env.MINIO_EXTERNAL_PORT) || 9000,
   useSSL:    false,
   accessKey: process.env.MINIO_ROOT_USER || 'minioadmin',
   secretKey: process.env.MINIO_ROOT_PASSWORD || 'minioadmin123',
@@ -139,14 +148,10 @@ app.get('/stream/:videoId', async (req, res) => {
 
     await minioClient.statObject(HLS_BUCKET, manifestKey)
 
-    const url = await minioClient.presignedGetObject(HLS_BUCKET, manifestKey, 3600)
+    // Use external client so presigned URL has external IP
+    const url = await minioExternalClient.presignedGetObject(HLS_BUCKET, manifestKey, 3600)
 
-    const externalUrl = url.replace(
-      'minio.ott-media.svc.cluster.local:9000',
-      '192.168.1.246:9000'
-    )
-
-    res.json({ videoId, manifestUrl: externalUrl, status: 'ready' })
+    res.json({ videoId, manifestUrl: url, status: 'ready' })
   } catch (err) {
     if (err.code === 'NotFound') {
       return res.status(404).json({
