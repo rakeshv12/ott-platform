@@ -73,12 +73,12 @@ async function createTranscodeJob(videoId) {
               INPUT=$(ls /tmp/input/*) &&
               mkdir -p /tmp/output/${videoId} &&
               ffmpeg -i "$INPUT" \
-                -vf scale=1280:720 -b:v 2800k -b:a 128k \
+                -vf scale=1280:720 -c:v libx264 -b:v 2800k -c:a aac -b:a 128k \
                 -f hls -hls_time 6 -hls_list_size 0 \
                 -hls_segment_filename "/tmp/output/${videoId}/720p_%03d.ts" \
                 /tmp/output/${videoId}/720p.m3u8 &&
               ffmpeg -i "$INPUT" \
-                -vf scale=640:360 -b:v 800k -b:a 96k \
+                -vf scale=640:360 -c:v libx264 -b:v 800k -c:a aac -b:a 96k \
                 -f hls -hls_time 6 -hls_list_size 0 \
                 -hls_segment_filename "/tmp/output/${videoId}/360p_%03d.ts" \
                 /tmp/output/${videoId}/360p.m3u8 &&
