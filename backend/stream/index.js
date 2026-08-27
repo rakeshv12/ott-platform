@@ -149,9 +149,9 @@ app.get('/stream/:videoId', async (req, res) => {
     await minioClient.statObject(HLS_BUCKET, manifestKey)
 
     // Use external client so presigned URL has external IP
-    const url = await minioExternalClient.presignedGetObject(HLS_BUCKET, manifestKey, 3600)
-
-    res.json({ videoId, manifestUrl: url, status: 'ready' })
+    const MINIO_PUBLIC_URL = process.env.MINIO_PUBLIC_URL || 'http://192.168.1.246:9000'
+    const publicUrl = `${MINIO_PUBLIC_URL}/hls-videos/${videoId}/master.m3u8`
+    res.json({ videoId, manifestUrl: publicUrl, status: 'ready' })
   } catch (err) {
     if (err.code === 'NotFound') {
       return res.status(404).json({

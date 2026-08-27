@@ -36,6 +36,8 @@ spec:
               value: "192.168.1.246"
             - name: MINIO_EXTERNAL_PORT
               value: "9000"
+            - name: MINIO_PUBLIC_URL
+              value: "http://192.168.1.246:9000"
           livenessProbe:  
             httpGet:
               path: /health
