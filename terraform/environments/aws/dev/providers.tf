@@ -9,9 +9,9 @@ terraform {
   }
 
   backend "s3" {
-    bucket = "ott-platform-terraform-state-dev"
+    bucket = "ott-platform-terraform-state-use1-dev"
     key    = "aws/dev/terraform.tfstate"
-    region = "ap-south-1"
+    region = "us-east-1"
   }
 
 }

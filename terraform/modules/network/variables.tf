@@ -13,3 +13,8 @@ variable "project_name" {
   description = "Project name"
   type        = string
 }
+
+variable "availability_zones" {
+  description = "Availability Zones for the network"
+  type        = list(string)
+}

@@ -11,3 +11,10 @@ variable "vpc_cidr" {
 
 }
 
+variable "availability_zones" {
+  description = "Availability Zones for the AWS dev environment"
+  type = list(string)
+}
+
+
+
