@@ -21,3 +21,6 @@ database_name           = "ottdb"
 database_username       = "ottadmin"
 database_instance_class = "db.t3.micro"
 database_engine_version = "17"
+
+redis_node_type      = "cache.t3.micro"
+redis_engine_version = "7.1"

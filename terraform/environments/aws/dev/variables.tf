@@ -83,3 +83,13 @@ variable "database_engine_version" {
   description = "PostgreSQL engine version for Dev"
   type        = string
 }
+
+variable "redis_node_type" {
+  description = "ElastiCache Redis node type for Dev"
+  type        = string
+}
+
+variable "redis_engine_version" {
+  description = "Redis engine version for Dev"
+  type        = string
+}

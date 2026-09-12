@@ -62,3 +62,19 @@ module "rds" {
   database_instance_class = var.database_instance_class
   database_engine_version = var.database_engine_version
 }
+
+# Create the private Redis cache for the Dev OTT platform.
+# Networking and sizing are supplied by the Dev environment,
+# while the reusable Redis implementation remains in the module.
+module "redis" {
+  source = "../../../modules/redis"
+
+  project_name = var.project_name
+  environment  = var.environment
+
+  vpc_id             = module.network.vpc_id
+  private_subnet_ids = module.network.private_subnet_ids
+
+  node_type      = var.redis_node_type
+  engine_version = var.redis_engine_version
+}
