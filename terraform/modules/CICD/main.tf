@@ -1,0 +1,348 @@
+# Creates an AWS CodeConnections connection to GitHub.
+#
+# Purpose:
+# This allows AWS services such as CodePipeline to securely
+# connect to our GitHub repository without storing a GitHub
+# personal access token in Terraform or Jenkins.
+#
+# Important:
+# Terraform creates the AWS-side connection first.
+# The connection will initially be PENDING.
+# We will authorize GitHub from the AWS Console afterward.
+
+resource "aws_codeconnections_connection" "github" {
+  name          = var.github_connection_name
+  provider_type = "GitHub"
+}
+
+# IAM role assumed by AWS CodeBuild.
+#
+# CodeBuild needs an IAM role so it can access AWS services
+# during the build without storing AWS access keys.
+
+resource "aws_iam_role" "codebuild" {
+    name = "${var.github_connection_name}-codebuild-role"
+
+    # Allows the CodeBuild service to assume this role.
+    assume_role_policy = jsonencode({
+        Version = "2012-10-17"
+
+        Statement = [
+          {
+            Effect = "Allow"
+                Principal = {
+                    Service = "codebuild.amazonaws.com"
+                }
+
+                Action = "sts:AssumeRole"
+           
+        }]
+    })
+
+}
+
+# Allows CodeBuild to create and write its build logs to CloudWatch Logs.
+# This is required so we can troubleshoot failed builds from AWS.
+
+resource "aws_iam_role_policy" "codebuild_logs" {
+
+    name = "${var.github_connection_name}-codebuild-logs"
+    role = aws_iam_role.codebuild.id
+
+    policy = jsonencode({
+        Version = "2012-10-17"
+
+        Statement = [
+            {
+                Effect = "Allow"
+                Action = [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogGroup",
+                    "logs:PutLogEvents"
+                ]
+                Resource = "*"
+            }
+        ]
+    })
+
+}
+
+
+# Allows CodeBuild to authenticate with ECR and push
+# the Docker images produced by our CI pipeline.
+resource "aws_iam_role_policy" "codebuild_ecr" {
+  name = "${var.github_connection_name}-codebuild-ecr"
+  role = aws_iam_role.codebuild.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Effect = "Allow"
+
+        Action = [
+          "ecr:GetAuthorizationToken"
+        ]
+
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+
+        Action = [
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:CompleteLayerUpload",
+          "ecr:InitiateLayerUpload",
+          "ecr:PutImage",
+          "ecr:UploadLayerPart"
+        ]
+
+        Resource = var.ecr_repository_arn
+      }
+    ]
+  })
+}
+
+# AWS CodePipeline orchestrates the CI/CD workflow.
+#
+# Flow:
+# GitHub → CodeConnections → CodePipeline → CodeBuild → ECR
+
+resource "aws_codepipeline" "ott" {
+  name     = var.codepipeline_name
+  role_arn = aws_iam_role.codepipeline.arn
+
+  # S3 stores artifacts exchanged between pipeline stages.
+  artifact_store {
+    location = aws_s3_bucket.artifacts.bucket
+    type     = "S3"
+  }
+
+  # Source stage: retrieves code from GitHub.
+  stage {
+    name = "Source"
+
+    action {
+      name             = "GitHub"
+      category         = "Source"
+      owner            = "AWS"
+      provider         = "CodeStarSourceConnection"
+      version          = "1"
+      output_artifacts = ["source_output"]
+
+      configuration = {
+        ConnectionArn    = aws_codeconnections_connection.github.arn
+        FullRepositoryId = var.github_repository
+        BranchName       = var.github_branch
+      }
+    }
+  }
+
+  # Build stage: sends the GitHub source artifact to CodeBuild.
+  stage {
+    name = "Build"
+
+    action {
+      name            = "DockerBuild"
+      category        = "Build"
+      owner           = "AWS"
+      provider        = "CodeBuild"
+      version         = "1"
+      input_artifacts  = ["source_output"]
+
+      configuration = {
+        ProjectName = aws_codebuild_project.ott.name
+      }
+    }
+  }
+
+  tags = {
+    Name        = var.codepipeline_name
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+  }
+}
+
+
+# AWS CodeBuild project.
+#
+# Purpose:
+# CodeBuild is the build engine for our AWS-native CI/CD pipeline.
+# CodePipeline will provide the source code to CodeBuild.
+#
+# The build will later:
+# 1. Build the OTT Docker image.
+# 2. Authenticate with Amazon ECR.
+# 3. Push the image to ECR.
+#
+# privileged_mode is required because CodeBuild needs
+# Docker-in-Docker capability to build container images.
+
+resource "aws_codebuild_project" "ott" {
+  name         = var.codebuild_project_name
+  service_role = aws_iam_role.codebuild.arn
+
+  artifacts {
+    type = "CODEPIPELINE"
+  }
+
+  source {
+    type = "CODEPIPELINE"
+  }
+
+  environment {
+    compute_type    = "BUILD_GENERAL1_SMALL"
+    image           = "aws/codebuild/standard:7.0"
+    type            = "LINUX_CONTAINER"
+    privileged_mode = true
+
+    environment_variable {
+      name  = "AWS_DEFAULT_REGION"
+      value = var.aws_region
+    }
+
+    environment_variable {
+      name  = "ECR_REPOSITORY_URL"
+      value = var.ecr_repository_url
+    }
+  }
+
+  logs_config {
+    cloudwatch_logs {
+      group_name  = "/aws/codebuild/${var.codebuild_project_name}"
+      stream_name = "build"
+    }
+  }
+
+  tags = {
+    Name        = var.codebuild_project_name
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+  }
+}
+
+
+# S3 bucket used by CodePipeline to temporarily store
+# source and build artifacts between pipeline stages.
+#
+# This bucket is separate from the Terraform state bucket.
+# Keeping them separate follows the principle of least privilege
+# and prevents CI/CD operations from accessing Terraform state.
+
+resource "aws_s3_bucket" "artifacts" {
+  bucket = var.artifact_bucket_name
+
+  tags = {
+    Name        = var.artifact_bucket_name
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+  }
+}
+
+# Enable versioning so artifact object versions are retained.
+resource "aws_s3_bucket_versioning" "artifacts" {
+  bucket = aws_s3_bucket.artifacts.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+# Prevent public access to CI/CD artifacts.
+resource "aws_s3_bucket_public_access_block" "artifacts" {
+  bucket = aws_s3_bucket.artifacts.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+# Encrypt artifacts at rest using S3-managed encryption.
+resource "aws_s3_bucket_server_side_encryption_configuration" "artifacts" {
+  bucket = aws_s3_bucket.artifacts.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+# IAM role assumed by AWS CodePipeline.
+#
+# CodePipeline uses this role to interact with the AWS services
+# required by the pipeline, such as CodeConnections, S3, and CodeBuild.
+
+resource "aws_iam_role" "codepipeline" {
+  name = "${var.codepipeline_name}-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Effect = "Allow"
+
+        Principal = {
+          Service = "codepipeline.amazonaws.com"
+        }
+
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
+# Permissions required by CodePipeline to:
+# 1. Use the GitHub CodeConnections connection.
+# 2. Read and write pipeline artifacts in S3.
+# 3. Start and monitor the CodeBuild project.
+
+resource "aws_iam_role_policy" "codepipeline" {
+  name = "${var.codepipeline_name}-policy"
+  role = aws_iam_role.codepipeline.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Effect = "Allow"
+
+        Action = [
+          "codeconnections:UseConnection"
+        ]
+
+        Resource = aws_codeconnections_connection.github.arn
+      },
+      {
+        Effect = "Allow"
+
+        Action = [
+          "s3:GetObject",
+          "s3:GetObjectVersion",
+          "s3:PutObject",
+          "s3:GetBucketVersioning"
+        ]
+
+        Resource = [
+          aws_s3_bucket.artifacts.arn,
+          "${aws_s3_bucket.artifacts.arn}/*"
+        ]
+      },
+      {
+        Effect = "Allow"
+
+        Action = [
+          "codebuild:StartBuild",
+          "codebuild:BatchGetBuilds",
+          "codebuild:StopBuild"
+        ]
+
+        Resource = aws_codebuild_project.ott.arn
+      }
+    ]
+  })
+}

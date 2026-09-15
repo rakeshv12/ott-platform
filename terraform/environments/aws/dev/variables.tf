@@ -93,3 +93,28 @@ variable "redis_engine_version" {
   description = "Redis engine version for Dev"
   type        = string
 }
+
+variable "codebuild_project_name" {
+  description = "Name of the AWS CodeBuild project for Dev"
+  type        = string
+}
+
+variable "github_repository" {
+  description = "GitHub repository in owner/repository format"
+  type        = string
+}
+
+variable "github_branch" {
+  description = "GitHub branch used by the CI/CD pipeline"
+  type        = string
+}
+
+variable "codepipeline_name" {
+  description = "Name of the AWS CodePipeline"
+  type        = string
+}
+
+variable "artifact_bucket_name" {
+  description = "S3 bucket used by CodePipeline for build artifacts"
+  type        = string
+}

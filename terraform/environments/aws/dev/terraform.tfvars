@@ -24,3 +24,7 @@ database_engine_version = "17"
 
 redis_node_type      = "cache.t3.micro"
 redis_engine_version = "7.1"
+
+codepipeline_name     = "ott-platform-dev-pipeline"
+artifact_bucket_name  = "ott-platform-dev-codepipeline-artifacts"
+codebuild_project_name = "ott-platform-dev-build"
