@@ -41,30 +41,76 @@ resource "aws_iam_role" "codebuild" {
 
 }
 
-# Allows CodeBuild to create and write its build logs to CloudWatch Logs.
-# This is required so we can troubleshoot failed builds from AWS.
-
+# Allow CodeBuild to write its build logs to the dedicated
+# CloudWatch Logs log group for this project.
 resource "aws_iam_role_policy" "codebuild_logs" {
+  name = "${var.github_connection_name}-codebuild-logs"
+  role = aws_iam_role.codebuild.id
 
-    name = "${var.github_connection_name}-codebuild-logs"
-    role = aws_iam_role.codebuild.id
+  policy = jsonencode({
+    Version = "2012-10-17"
 
-    policy = jsonencode({
-        Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
 
-        Statement = [
-            {
-                Effect = "Allow"
-                Action = [
-                    "logs:CreateLogGroup",
-                    "logs:CreateLogGroup",
-                    "logs:PutLogEvents"
-                ]
-                Resource = "*"
-            }
+        # CodeBuild may create the project log group if it
+        # does not already exist.
+        Action = [
+          "logs:CreateLogGroup"
         ]
-    })
 
+        Resource = "arn:aws:logs:${var.aws_region}:*:log-group:/aws/codebuild/${var.codebuild_project_name}"
+      },
+      {
+        Effect = "Allow"
+
+        # CodeBuild creates a log stream and writes build events
+        # inside the project-specific log group.
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+
+        Resource = "arn:aws:logs:${var.aws_region}:*:log-group:/aws/codebuild/${var.codebuild_project_name}:*"
+      }
+    ]
+  })
+}
+
+# Allow CodeBuild to read the source artifact delivered by CodePipeline.
+resource "aws_iam_role_policy" "codebuild_s3" {
+  name = "${var.github_connection_name}-codebuild-s3"
+  role = aws_iam_role.codebuild.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+
+        # CodeBuild needs to read the CodePipeline artifact
+        # stored in the S3 artifact bucket.
+        Action = [
+          "s3:GetObject",
+          "s3:GetObjectVersion"
+        ]
+
+        Resource = "${aws_s3_bucket.artifacts.arn}/*"
+      },
+      {
+        Effect = "Allow"
+
+        # CodeBuild/CodePipeline integration may need bucket metadata.
+        Action = [
+          "s3:GetBucketVersioning",
+          "s3:GetBucketLocation"
+        ]
+
+        Resource = aws_s3_bucket.artifacts.arn
+      }
+    ]
+  })
 }
 
 
@@ -346,3 +392,4 @@ resource "aws_iam_role_policy" "codepipeline" {
     ]
   })
 }
+
