@@ -1,0 +1,40 @@
+version: 0.2
+
+phases:
+
+  pre_build:
+    commands:
+      # Display basic build information.
+      - echo "Starting OTT platform Docker build..."
+
+      # Authenticate Docker with Amazon ECR.
+      - echo "Logging in to Amazon ECR..."
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REPOSITORY_URL
+
+  build:
+    commands:
+      # Build the Auth service image.
+      - echo "Building Auth service..."
+      - docker build -t $ECR_REPOSITORY_URL:auth-$CODEBUILD_RESOLVED_SOURCE_VERSION ./backend/auth
+
+      # Build the Catalog service image.
+      - echo "Building Catalog service..."
+      - docker build -t $ECR_REPOSITORY_URL:catalog-$CODEBUILD_RESOLVED_SOURCE_VERSION ./backend/catalog
+
+      # Build the Stream service image.
+      - echo "Building Stream service..."
+      - docker build -t $ECR_REPOSITORY_URL:stream-$CODEBUILD_RESOLVED_SOURCE_VERSION ./backend/stream
+
+  post_build:
+    commands:
+      # Push all service images to ECR.
+      - echo "Pushing Auth image..."
+      - docker push $ECR_REPOSITORY_URL:auth-$CODEBUILD_RESOLVED_SOURCE_VERSION
+
+      - echo "Pushing Catalog image..."
+      - docker push $ECR_REPOSITORY_URL:catalog-$CODEBUILD_RESOLVED_SOURCE_VERSION
+
+      - echo "Pushing Stream image..."
+      - docker push $ECR_REPOSITORY_URL:stream-$CODEBUILD_RESOLVED_SOURCE_VERSION
+
+      - echo "OTT platform images successfully pushed to ECR."
