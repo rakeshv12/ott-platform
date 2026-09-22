@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: catalog-service
+  labels:
+    app: catalog-service
+    component: backend
+    environment: {{ .Values.global.environment }}
+
+spec:
+  replicas: {{ .Values.catalog.replicaCount }}
+
+  selector:
+    matchLabels:
+      app: catalog-service
+
+  template:
+    metadata:
+      labels:
+        app: catalog-service
+        component: backend
+
+    spec:
+      containers:
+        - name: catalog-service
+
+          # Repository and tag are supplied through values-dev.yaml.
+          image: "{{ .Values.catalog.image.repository }}:{{ .Values.catalog.image.tag }}"
+
+          imagePullPolicy: {{ .Values.catalog.image.pullPolicy }}
+
+          ports:
+            - name: http
+              containerPort: {{ .Values.catalog.service.port }}
+              protocol: TCP
+
+          env:
+            - name: PORT
+              value: "{{ .Values.catalog.service.port }}"
+
+            - name: POSTGRES_HOST
+              value: "postgres"
+
+            - name: REDIS_HOST
+              value: "redis"
+
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: ott-secrets
+                  key: POSTGRES_USER
+
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ott-secrets
+                  key: POSTGRES_PASSWORD
+
+            - name: CATALOG_DB
+              value: "catalogdb"
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          resources:
+            {{- toYaml .Values.catalog.resources | nindent 12 }}

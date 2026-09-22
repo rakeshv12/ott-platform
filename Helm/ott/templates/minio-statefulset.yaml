@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: StatefulSet
+
+metadata:
+  name: minio
+  namespace: ott-media
+  labels:
+    app: minio
+    component: media
+    environment: {{ .Values.global.environment }}
+
+spec:
+  replicas: {{ .Values.minio.replicaCount }}
+
+  serviceName: minio
+
+  selector:
+    matchLabels:
+      app: minio
+
+  template:
+    metadata:
+      labels:
+        app: minio
+        component: media
+
+    spec:
+      containers:
+        - name: minio
+
+          image: "{{ .Values.minio.image.repository }}:{{ .Values.minio.image.tag }}"
+
+          imagePullPolicy: {{ .Values.minio.image.pullPolicy }}
+
+          ports:
+            - name: api
+              containerPort: 9000
+              protocol: TCP
+
+            - name: console
+              containerPort: 9001
+              protocol: TCP
+
+          livenessProbe:
+            httpGet:
+              path: /minio/health/live
+              port: api
+            initialDelaySeconds: 30
+            periodSeconds: 10
+
+          readinessProbe:
+            httpGet:
+              path: /minio/health/ready
+              port: api
+            initialDelaySeconds: 30
+            periodSeconds: 10
+
+          command:
+            - minio
+            - server
+            - /data
+            - --console-address
+            - ":9001"
+
+          env:
+            # Credentials will come from a Kubernetes Secret.
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secret
+                  key: MINIO_ROOT_USER
+
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secret
+                  key: MINIO_ROOT_PASSWORD
+
+          volumeMounts:
+            - name: minio-data
+              mountPath: /data
+
+  volumeClaimTemplates:
+    - metadata:
+        name: minio-data
+
+      spec:
+        accessModes:
+          - {{ .Values.minio.persistence.accessMode }}
+
+        resources:
+          requests:
+            storage: {{ .Values.minio.persistence.size }}

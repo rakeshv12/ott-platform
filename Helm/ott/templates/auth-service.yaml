@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: auth-service
+  labels:
+    app: auth-service
+    component: backend
+    environment: {{ .Values.global.environment }}
+
+spec:
+  # Internal Kubernetes service.
+  # Auth should not be directly exposed to the internet.
+  type: {{ .Values.auth.service.type }}
+
+  selector:
+    app: auth-service
+
+  ports:
+    - name: http
+      port: {{ .Values.auth.service.port }}
+      targetPort: http
+      protocol: TCP

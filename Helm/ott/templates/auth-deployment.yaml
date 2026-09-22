@@ -1,0 +1,105 @@
+{{/*
+Auth Service Deployment
+This template deploys the Auth microservice.
+Configuration is read from values.yaml instead of hardcoding
+environment-specific values.
+*/}}
+
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: auth-service
+  labels:
+    app: auth-service
+    component: backend
+    environment: {{ .Values.global.environment }}
+
+spec:
+  # Number of Auth service replicas.
+  replicas: {{ .Values.auth.replicaCount }}
+
+  selector:
+    matchLabels:
+      app: auth-service
+
+  template:
+    metadata:
+      labels:
+        app: auth-service
+        component: backend
+
+    spec:
+      containers:
+
+        # Auth application container
+        - name: auth-service
+
+          # Image repository and tag come from values.yaml.
+          image: "{{ .Values.auth.image.repository }}:{{ .Values.auth.image.tag }}"
+
+          imagePullPolicy: {{ .Values.auth.image.pullPolicy }}
+
+          ports:
+            - name: http
+              containerPort: {{ .Values.auth.service.port }}
+              protocol: TCP
+
+          # Application configuration
+          env:
+            - name: PORT
+              value: "{{ .Values.auth.service.port }}"
+
+            - name: POSTGRES_HOST
+              value: "postgres"
+
+            - name: REDIS_HOST
+              value: "redis"
+
+            # Database credentials come from Kubernetes Secret.
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: ott-secrets
+                  key: POSTGRES_USER
+
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ott-secrets
+                  key: POSTGRES_PASSWORD
+
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: ott-secrets
+                  key: POSTGRES_DB
+
+            # JWT secret also comes from Kubernetes Secret.
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ott-secrets
+                  key: JWT_SECRET
+
+          # Kubernetes uses this endpoint to determine
+          # whether the application is alive.
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+
+          # Kubernetes uses this endpoint to determine
+          # whether the application is ready for traffic.
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          # CPU and memory are controlled through values.yaml.
+          resources:
+            {{- toYaml .Values.auth.resources | nindent 12 }}

@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: stream-service
+  labels:
+    app: stream-service
+    component: backend
+    environment: {{ .Values.global.environment }}
+
+spec:
+  replicas: {{ .Values.stream.replicaCount }}
+
+  selector:
+    matchLabels:
+      app: stream-service
+
+  template:
+    metadata:
+      labels:
+        app: stream-service
+        component: backend
+
+    spec:
+      # Stream service needs its ServiceAccount because
+      # it dynamically creates FFmpeg Kubernetes Jobs.
+      serviceAccountName: {{ .Values.serviceAccount.name | default "stream-service" }}
+
+      containers:
+        - name: stream-service
+
+          # Repository and tag come from values-dev.yaml.
+          image: "{{ .Values.stream.image.repository }}:{{ .Values.stream.image.tag }}"
+
+          imagePullPolicy: {{ .Values.stream.image.pullPolicy }}
+
+          ports:
+            - name: http
+              containerPort: {{ .Values.stream.service.port }}
+              protocol: TCP
+
+          env:
+            - name: PORT
+              value: "{{ .Values.stream.service.port }}"
+
+            # Internal MinIO endpoint used by Stream service.
+            - name: MINIO_HOST
+              value: "minio.ott-media.svc.cluster.local"
+
+            - name: MINIO_PORT
+              value: "9000"
+
+            # MinIO credentials should eventually come from
+            # a Kubernetes Secret rather than plain text.
+            - name: MINIO_ROOT_USER
+              value: "minioadmin"
+
+            - name: MINIO_ROOT_PASSWORD
+              value: "minioadmin123"
+
+            # Temporary dev configuration for the existing
+            # MinIO external access path.
+            - name: MINIO_EXTERNAL_HOST
+              value: "192.168.1.246"
+
+            - name: MINIO_EXTERNAL_PORT
+              value: "9000"
+
+            - name: MINIO_PUBLIC_URL
+              value: "http://192.168.1.246:9000"
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          resources:
+            {{- toYaml .Values.stream.resources | nindent 12 }}

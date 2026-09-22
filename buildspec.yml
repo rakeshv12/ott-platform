@@ -25,6 +25,10 @@ phases:
       - echo "Building Stream service..."
       - docker build -t $ECR_REPOSITORY_URL:stream-$CODEBUILD_RESOLVED_SOURCE_VERSION ./backend/stream
 
+      # Build the Frontend image.
+      - echo "Building Frontend..."
+      - docker build -t $ECR_REPOSITORY_URL:frontend-$CODEBUILD_RESOLVED_SOURCE_VERSION ./frontend/web
+
   post_build:
     commands:
       # Push all service images to ECR.
@@ -36,5 +40,10 @@ phases:
 
       - echo "Pushing Stream image..."
       - docker push $ECR_REPOSITORY_URL:stream-$CODEBUILD_RESOLVED_SOURCE_VERSION
+
+      # Push Frontend image to ECR.
+      - echo "Pushing Frontend image..."
+      - docker push $ECR_REPOSITORY_URL:frontend-$CODEBUILD_RESOLVED_SOURCE_VERSION
+
 
       - echo "OTT platform images successfully pushed to ECR."
