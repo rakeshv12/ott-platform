@@ -34,6 +34,7 @@ module "eks" {
   node_min_size      = var.node_min_size
   node_desired_size  = var.node_desired_size
   node_max_size      = var.node_max_size
+  #codebuild_role_arn = module.cicd.codebuild_role_arn
 }
 
 # Create the private ECR repository used to store
@@ -87,14 +88,168 @@ module "cicd" {
   source = "../../../modules/cicd"
 
   github_connection_name = "ott-platform-github"
-  ecr_repository_arn         = module.ecr.repository_arn
+  ecr_repository_arn     = module.ecr.repository_arn
 
   codebuild_project_name = var.codebuild_project_name
-  ecr_repository_url = module.ecr.repository_url
-  aws_region = var.aws_region
-  environment = var.environment
-  github_repository = var.github_repository
-  github_branch     = var.github_branch
-  codepipeline_name    = var.codepipeline_name
-  artifact_bucket_name = var.artifact_bucket_name
+  ecr_repository_url     = module.ecr.repository_url
+  aws_region             = var.aws_region
+  environment            = var.environment
+  github_repository      = var.github_repository
+  github_branch          = var.github_branch
+  codepipeline_name      = var.codepipeline_name
+  artifact_bucket_name   = var.artifact_bucket_name
+
+  eks_cluster_name = module.eks.cluster_name
+  helm_chart_path  = "Helm/ott"
+  helm_values_file = "Helm/ott/values-dev.yaml"
+
+  deploy_codebuild_project_name = var.deploy_codebuild_project_name
+  helm_release_name             = var.helm_release_name
+  backend_namespace             = var.backend_namespace
+  media_namespace               = var.media_namespace
+}
+
+# -----------------------------------------------------------------------------
+# EKS aws-auth Configuration
+# -----------------------------------------------------------------------------
+# Maps the CodeBuild IAM role to a Kubernetes group so the CI/CD deployment
+# process can authenticate and deploy workloads to the EKS cluster.
+#
+# The existing EKS node-role mapping is preserved.
+# -----------------------------------------------------------------------------
+
+resource "kubernetes_config_map_v1_data" "aws_auth" {
+
+  metadata {
+    name      = "aws-auth"
+    namespace = "kube-system"
+  }
+
+  data = {
+    mapRoles = yamlencode([
+      {
+        rolearn  = module.eks.node_role_arn
+        username = "system:node:{{EC2PrivateDNSName}}"
+        groups = [
+          "system:bootstrappers",
+          "system:nodes"
+        ]
+      },
+      {
+        rolearn  = module.cicd.codebuild_role_arn
+        username = "ott-platform-codebuild"
+        groups = [
+          "ott-platform-deployer"
+        ]
+      }
+    ])
+  }
+
+  force = true
+
+  depends_on = [
+    module.eks,
+    module.cicd
+  ]
+}
+
+# -----------------------------------------------------------------------------
+# CodeBuild Deployment ClusterRole
+# -----------------------------------------------------------------------------
+# Grants the CodeBuild deployment group the Kubernetes permissions required
+# to deploy and update the OTT Helm release.
+#
+# This is intentionally separate from the Stream service ClusterRole.
+# -----------------------------------------------------------------------------
+
+resource "kubernetes_cluster_role_v1" "ott_platform_deployer" {
+
+  metadata {
+    name = "ott-platform-deployer"
+  }
+
+  # Core Kubernetes API resources.
+  rule {
+    api_groups = [""]
+    resources = [
+      "configmaps",
+      "secrets",
+      "services",
+      "serviceaccounts",
+      "persistentvolumeclaims"
+    ]
+    verbs = [
+      "get",
+      "list",
+      "watch",
+      "create",
+      "update",
+      "patch",
+      "delete"
+    ]
+  }
+
+  # Workload resources.
+  rule {
+    api_groups = ["apps"]
+    resources = [
+      "deployments",
+      "statefulsets"
+    ]
+    verbs = [
+      "get",
+      "list",
+      "watch",
+      "create",
+      "update",
+      "patch",
+      "delete"
+    ]
+  }
+
+  # RBAC resources created by the OTT Helm chart.
+  rule {
+    api_groups = ["rbac.authorization.k8s.io"]
+    resources = [
+      "clusterroles",
+      "clusterrolebindings",
+      "roles",
+      "rolebindings"
+    ]
+    verbs = [
+      "get",
+      "list",
+      "watch",
+      "create",
+      "update",
+      "patch",
+      "delete"
+    ]
+  }
+}
+
+# -----------------------------------------------------------------------------
+# CodeBuild Deployment ClusterRoleBinding
+# -----------------------------------------------------------------------------
+# Connects the Kubernetes group assigned through aws-auth to the
+# CodeBuild deployment ClusterRole.
+# -----------------------------------------------------------------------------
+
+resource "kubernetes_cluster_role_binding_v1" "ott_platform_deployer" {
+
+  metadata {
+    name = "ott-platform-deployer"
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = kubernetes_cluster_role_v1.ott_platform_deployer.metadata[0].name
+  }
+
+  subject {
+    kind      = "Group"
+    name      = "ott-platform-deployer"
+    api_group = "rbac.authorization.k8s.io"
+  }
 }

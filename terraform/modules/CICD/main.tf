@@ -387,9 +387,195 @@ resource "aws_iam_role_policy" "codepipeline" {
           "codebuild:StopBuild"
         ]
 
-        Resource = aws_codebuild_project.ott.arn
+        Resource = [
+          aws_codebuild_project.ott.arn,
+          aws_codebuild_project.deploy.arn
+        ] 
       }
     ]
   })
 }
 
+# Allow CodeBuild to obtain an authentication token for the EKS cluster.
+#
+# CodeBuild will use this permission when configuring kubectl
+# against the target EKS cluster during the deployment stage.
+resource "aws_iam_role_policy" "codebuild_eks" {
+  name = "${var.github_connection_name}-codebuild-eks"
+  role = aws_iam_role.codebuild.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Effect = "Allow"
+
+        Action = [
+          "eks:DescribeCluster"
+        ]
+
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# IAM role assumed by the dedicated deployment CodeBuild project.
+#
+# This role is intentionally separate from the Docker build role.
+# The build project creates and pushes images.
+# The deploy project deploys those images to EKS.
+resource "aws_iam_role" "deploy_codebuild" {
+  name = "${var.deploy_codebuild_project_name}-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Effect = "Allow"
+
+        Principal = {
+          Service = "codebuild.amazonaws.com"
+        }
+
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
+# Allow the deployment CodeBuild project to write logs to CloudWatch.
+resource "aws_iam_role_policy" "deploy_codebuild_logs" {
+  name = "${var.deploy_codebuild_project_name}-logs"
+  role = aws_iam_role.deploy_codebuild.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Effect = "Allow"
+
+        Action = [
+          "logs:CreateLogGroup"
+        ]
+
+        Resource = "arn:aws:logs:${var.aws_region}:*:log-group:/aws/codebuild/${var.deploy_codebuild_project_name}"
+      },
+      {
+        Effect = "Allow"
+
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+
+        Resource = "arn:aws:logs:${var.aws_region}:*:log-group:/aws/codebuild/${var.deploy_codebuild_project_name}:*"
+      }
+    ]
+  })
+}
+
+# Allow the deployment CodeBuild project to obtain EKS
+# cluster connection details for kubectl configuration.
+resource "aws_iam_role_policy" "deploy_codebuild_eks" {
+  name = "${var.deploy_codebuild_project_name}-eks"
+  role = aws_iam_role.deploy_codebuild.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Effect = "Allow"
+
+        Action = [
+          "eks:DescribeCluster"
+        ]
+
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Dedicated CodeBuild project for deploying the OTT platform to EKS.
+#
+# Unlike the Docker build project, this project does not need
+# privileged Docker access. It receives the same source artifact
+# from CodePipeline and runs Helm/kubectl deployment commands.
+resource "aws_codebuild_project" "deploy" {
+  name         = var.deploy_codebuild_project_name
+  service_role = aws_iam_role.deploy_codebuild.arn
+
+  artifacts {
+    type = "CODEPIPELINE"
+  }
+
+  source {
+    type      = "CODEPIPELINE"
+    buildspec = "buildspec-deploy.yml"
+  }
+
+  environment {
+    compute_type    = "BUILD_GENERAL1_SMALL"
+    image           = "aws/codebuild/standard:7.0"
+    type            = "LINUX_CONTAINER"
+    privileged_mode = false
+
+    environment_variable {
+      name  = "AWS_DEFAULT_REGION"
+      value = var.aws_region
+    }
+
+    environment_variable {
+      name  = "EKS_CLUSTER_NAME"
+      value = var.eks_cluster_name
+    }
+
+    environment_variable {
+      name  = "ECR_REPOSITORY_URL"
+      value = var.ecr_repository_url
+    }
+
+    environment_variable {
+      name  = "HELM_CHART_PATH"
+      value = var.helm_chart_path
+    }
+
+    environment_variable {
+      name  = "HELM_VALUES_FILE"
+      value = var.helm_values_file
+    }
+
+    environment_variable {
+      name  = "HELM_RELEASE_NAME"
+      value = var.helm_release_name
+    }
+
+    environment_variable {
+      name  = "BACKEND_NAMESPACE"
+      value = var.backend_namespace
+    }
+
+    environment_variable {
+      name  = "MEDIA_NAMESPACE"
+      value = var.media_namespace
+    }
+  }
+
+  logs_config {
+    cloudwatch_logs {
+      group_name  = "/aws/codebuild/${var.deploy_codebuild_project_name}"
+      stream_name = "deploy"
+    }
+  }
+
+  tags = {
+    Name        = var.deploy_codebuild_project_name
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+  }
+}

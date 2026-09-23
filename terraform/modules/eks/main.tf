@@ -23,6 +23,9 @@ resource "aws_eks_cluster" "this" {
   # IAM role created specifically for the EKS control plane.
   role_arn = aws_iam_role.eks_cluster.arn
 
+  # Enable the modern EKS Access Entry API while preserving
+  # the existing aws-auth ConfigMap used by the worker nodes.
+  
   # ---------------------------------------------------------------------------
   # VPC configuration
   # ---------------------------------------------------------------------------
@@ -55,6 +58,14 @@ resource "aws_eks_cluster" "this" {
     ManagedBy   = "Terraform"
   }
 }
+
+# -----------------------------------------------------------------------------
+# CodeBuild EKS Access Entry
+# -----------------------------------------------------------------------------
+# Allows the CodeBuild IAM role to authenticate to this EKS cluster.
+# Kubernetes permissions will be associated separately through an
+# EKS access policy.
+# -----------------------------------------------------------------------------
 
 
 # -----------------------------------------------------------------------------

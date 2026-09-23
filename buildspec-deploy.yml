@@ -1,0 +1,25 @@
+version: 0.2
+
+phases:
+
+  install:
+    commands:
+      # Display the deployment tools available in the CodeBuild environment.
+      - echo "Starting OTT platform deployment..."
+      - aws --version
+      - kubectl version --client=true
+      - helm version
+
+  pre_build:
+    commands:
+      # Configure kubectl to communicate with the target EKS cluster.
+      - echo "Configuring kubectl for EKS..."
+      - aws eks update-kubeconfig --region "$AWS_DEFAULT_REGION" --name "$EKS_CLUSTER_NAME"
+
+      # Verify that the EKS cluster is reachable.
+      - echo "Checking EKS cluster connectivity..."
+      - kubectl cluster-info
+
+       # Read-only verification of the EKS worker nodes.
+      - echo "Checking EKS worker nodes..."
+      - kubectl get nodes

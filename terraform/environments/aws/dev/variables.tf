@@ -118,3 +118,23 @@ variable "artifact_bucket_name" {
   description = "S3 bucket used by CodePipeline for build artifacts"
   type        = string
 }
+
+variable "deploy_codebuild_project_name" {
+  description = "Name of the CodeBuild project used for Kubernetes deployment"
+  type        = string
+}
+
+variable "helm_release_name" {
+  description = "Helm release name for the OTT platform"
+  type        = string
+}
+
+variable "backend_namespace" {
+  description = "Kubernetes namespace for OTT backend services"
+  type        = string
+}
+
+variable "media_namespace" {
+  description = "Kubernetes namespace for OTT media services"
+  type        = string
+}

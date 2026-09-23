@@ -61,3 +61,4 @@ variable "node_max_size" {
   description = "Maximum number of EKS worker nodes"
   type        = number
 }
+

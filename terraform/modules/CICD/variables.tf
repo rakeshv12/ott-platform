@@ -47,3 +47,39 @@ variable "artifact_bucket_name" {
   description = "S3 bucket used by CodePipeline for build artifacts"
   type        = string
 }
+
+variable "eks_cluster_name" {
+  description = "Name of the EKS cluster used for application deployment"
+  type        = string
+}
+
+variable "helm_chart_path" {
+  description = "Path to the Helm chart used for EKS deployment"
+  type        = string
+}
+
+variable "helm_values_file" {
+  description = "Path to the environment-specific Helm values file"
+  type        = string
+}
+
+variable "deploy_codebuild_project_name" {
+  description = "Name of the AWS CodeBuild project used for Kubernetes deployment"
+  type        = string
+}
+
+variable "helm_release_name" {
+  description = "Helm release name used to deploy the OTT platform"
+  type        = string
+}
+
+variable "backend_namespace" {
+  description = "Kubernetes namespace for OTT backend services"
+  type        = string
+}
+
+variable "media_namespace" {
+  description = "Kubernetes namespace for media services such as MinIO"
+  type        = string
+}
+
