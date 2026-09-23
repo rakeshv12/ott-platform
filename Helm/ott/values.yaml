@@ -177,3 +177,13 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+
+# ------------------------------------------------------------
+# Postgres & Redis
+# ------------------------------------------------------------
+postgres:
+  enabled: true
+
+redis:
+  enabled: true

@@ -34,5 +34,11 @@ minio:
 frontend:
   image:
     repository: 416648267020.dkr.ecr.us-east-1.amazonaws.com/ott-platform-dev
-    tag: frontend-REPLACE_WITH_FRONTEND_IMAGE_TAG
+    tag: frontend-d94ba5916a2206b120a0928f265e25cb148ad0c4
+
+postgres:
+  enabled: false
+
+redis:
+  enabled: false
 
