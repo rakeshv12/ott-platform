@@ -154,6 +154,36 @@ resource "kubernetes_config_map_v1_data" "aws_auth" {
 }
 
 # -----------------------------------------------------------------------------
+# OTT Application Namespaces
+# -----------------------------------------------------------------------------
+# Kubernetes namespaces are managed by Terraform rather than Helm.
+# Helm manages application resources inside these namespaces.
+#
+# Namespace layout:
+#   ott-frontend -> Frontend workloads
+#   ott-backend  -> Auth, Catalog, Stream workloads
+#   ott-media    -> MinIO and media-processing workloads
+# -----------------------------------------------------------------------------
+
+resource "kubernetes_namespace_v1" "ott_frontend" {
+  metadata {
+    name = "ott-frontend"
+  }
+}
+
+resource "kubernetes_namespace_v1" "ott_backend" {
+  metadata {
+    name = var.backend_namespace
+  }
+}
+
+resource "kubernetes_namespace_v1" "ott_media" {
+  metadata {
+    name = var.media_namespace
+  }
+}
+
+# -----------------------------------------------------------------------------
 # CodeBuild Deployment ClusterRole
 # -----------------------------------------------------------------------------
 # Grants the CodeBuild deployment group the Kubernetes permissions required

@@ -1,0 +1,599 @@
+---
+# Source: ott/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ott-platform
+  labels:
+    helm.sh/chart: ott-0.1.0
+    app.kubernetes.io/name: ott
+    app.kubernetes.io/instance: ott-platform
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+automountServiceAccountToken: true
+---
+# Source: ott/templates/stream-rbac.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: stream-service
+  namespace: ott-backend
+---
+# Source: ott/templates/minio-secret.yaml
+apiVersion: v1
+kind: Secret
+
+metadata:
+  name: minio-secret
+  namespace: ott-media
+
+type: Opaque
+
+stringData:
+  MINIO_ROOT_USER: "minioadmin"
+  MINIO_ROOT_PASSWORD: "minioadmin123"
+---
+# Source: ott/templates/stream-rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: stream-service
+rules:
+  - apiGroups:
+      - batch
+    resources:
+      - jobs
+    verbs:
+      - create
+      - get
+      - list
+      - delete
+---
+# Source: ott/templates/stream-rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: stream-service
+
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: stream-service
+
+subjects:
+  - kind: ServiceAccount
+    name: stream-service
+    namespace: ott-backend
+---
+# Source: ott/templates/auth-service.yaml
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: auth-service
+  labels:
+    app: auth-service
+    component: backend
+    environment: dev
+
+spec:
+  # Internal Kubernetes service.
+  # Auth should not be directly exposed to the internet.
+  type: ClusterIP
+
+  selector:
+    app: auth-service
+
+  ports:
+    - name: http
+      port: 3001
+      targetPort: http
+      protocol: TCP
+---
+# Source: ott/templates/catalog-service.yaml
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: catalog-service
+  labels:
+    app: catalog-service
+    component: backend
+    environment: dev
+
+spec:
+  # Catalog is an internal backend service.
+  type: ClusterIP
+
+  selector:
+    app: catalog-service
+
+  ports:
+    - name: http
+      port: 3002
+      targetPort: http
+      protocol: TCP
+---
+# Source: ott/templates/frontend-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: ott-frontend
+  labels:
+    app: frontend
+    component: frontend
+    environment: dev
+spec:
+  type: ClusterIP
+  selector:
+    app: frontend
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+      protocol: TCP
+---
+# Source: ott/templates/minio-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  namespace: ott-media
+  labels:
+    app: minio
+    component: media
+    environment: dev
+spec:
+  type: ClusterIP
+  selector:
+    app: minio
+  ports:
+    - name: api
+      port: 9000
+      targetPort: api
+      protocol: TCP
+    - name: console
+      port: 9001
+      targetPort: console
+      protocol: TCP
+---
+# Source: ott/templates/stream-service.yaml
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: stream-service
+  labels:
+    app: stream-service
+    component: backend
+    environment: dev
+
+spec:
+  # Stream is an internal backend service.
+  type: ClusterIP
+
+  selector:
+    app: stream-service
+
+  ports:
+    - name: http
+      port: 3003
+      targetPort: http
+      protocol: TCP
+---
+# Source: ott/templates/auth-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: auth-service
+  labels:
+    app: auth-service
+    component: backend
+    environment: dev
+
+spec:
+  # Number of Auth service replicas.
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: auth-service
+
+  template:
+    metadata:
+      labels:
+        app: auth-service
+        component: backend
+
+    spec:
+      containers:
+
+        # Auth application container
+        - name: auth-service
+
+          # Image repository and tag come from values.yaml.
+          image: "416648267020.dkr.ecr.us-east-1.amazonaws.com/ott-platform-dev:auth-14fe29821db2f26a792644579c3922d68de99e73"
+
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: http
+              containerPort: 3001
+              protocol: TCP
+
+          # Application configuration
+          env:
+            - name: PORT
+              value: "3001"
+
+            - name: POSTGRES_HOST
+              value: "postgres"
+
+            - name: REDIS_HOST
+              value: "redis"
+
+            # Database credentials come from Kubernetes Secret.
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: ott-secrets
+                  key: POSTGRES_USER
+
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ott-secrets
+                  key: POSTGRES_PASSWORD
+
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: ott-secrets
+                  key: POSTGRES_DB
+
+            # JWT secret also comes from Kubernetes Secret.
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ott-secrets
+                  key: JWT_SECRET
+
+          # Kubernetes uses this endpoint to determine
+          # whether the application is alive.
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+
+          # Kubernetes uses this endpoint to determine
+          # whether the application is ready for traffic.
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          # CPU and memory are controlled through values.yaml.
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+---
+# Source: ott/templates/catalog-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: catalog-service
+  labels:
+    app: catalog-service
+    component: backend
+    environment: dev
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: catalog-service
+
+  template:
+    metadata:
+      labels:
+        app: catalog-service
+        component: backend
+
+    spec:
+      containers:
+        - name: catalog-service
+
+          # Repository and tag are supplied through values-dev.yaml.
+          image: "416648267020.dkr.ecr.us-east-1.amazonaws.com/ott-platform-dev:catalog-14fe29821db2f26a792644579c3922d68de99e73"
+
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: http
+              containerPort: 3002
+              protocol: TCP
+
+          env:
+            - name: PORT
+              value: "3002"
+
+            - name: POSTGRES_HOST
+              value: "postgres"
+
+            - name: REDIS_HOST
+              value: "redis"
+
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: ott-secrets
+                  key: POSTGRES_USER
+
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ott-secrets
+                  key: POSTGRES_PASSWORD
+
+            - name: CATALOG_DB
+              value: "catalogdb"
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+---
+# Source: ott/templates/frontend-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: ott-frontend
+  labels:
+    app: frontend
+    component: frontend
+    environment: dev
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+        component: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: "416648267020.dkr.ecr.us-east-1.amazonaws.com/ott-platform-dev:frontend-d94ba5916a2206b120a0928f265e25cb148ad0c4"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+---
+# Source: ott/templates/stream-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: stream-service
+  labels:
+    app: stream-service
+    component: backend
+    environment: dev
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: stream-service
+
+  template:
+    metadata:
+      labels:
+        app: stream-service
+        component: backend
+
+    spec:
+      # Stream service needs its ServiceAccount because
+      # it dynamically creates FFmpeg Kubernetes Jobs.
+      serviceAccountName: stream-service
+
+      containers:
+        - name: stream-service
+
+          # Repository and tag come from values-dev.yaml.
+          image: "416648267020.dkr.ecr.us-east-1.amazonaws.com/ott-platform-dev:stream-14fe29821db2f26a792644579c3922d68de99e73"
+
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: http
+              containerPort: 3003
+              protocol: TCP
+
+          env:
+            - name: PORT
+              value: "3003"
+
+            # Internal MinIO endpoint used by Stream service.
+            - name: MINIO_HOST
+              value: "minio.ott-media.svc.cluster.local"
+
+            - name: MINIO_PORT
+              value: "9000"
+
+            # MinIO credentials should eventually come from
+            # a Kubernetes Secret rather than plain text.
+            - name: MINIO_ROOT_USER
+              value: "minioadmin"
+
+            - name: MINIO_ROOT_PASSWORD
+              value: "minioadmin123"
+
+            # Temporary dev configuration for the existing
+            # MinIO external access path.
+            - name: MINIO_EXTERNAL_HOST
+              value: "192.168.1.246"
+
+            - name: MINIO_EXTERNAL_PORT
+              value: "9000"
+
+            - name: MINIO_PUBLIC_URL
+              value: "http://192.168.1.246:9000"
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+---
+# Source: ott/templates/minio-statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+
+metadata:
+  name: minio
+  namespace: ott-media
+  labels:
+    app: minio
+    component: media
+    environment: dev
+
+spec:
+  replicas: 1
+
+  serviceName: minio
+
+  selector:
+    matchLabels:
+      app: minio
+
+  template:
+    metadata:
+      labels:
+        app: minio
+        component: media
+
+    spec:
+      containers:
+        - name: minio
+
+          image: "quay.io/minio/minio:latest"
+
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: api
+              containerPort: 9000
+              protocol: TCP
+
+            - name: console
+              containerPort: 9001
+              protocol: TCP
+
+          livenessProbe:
+            httpGet:
+              path: /minio/health/live
+              port: api
+            initialDelaySeconds: 30
+            periodSeconds: 10
+
+          readinessProbe:
+            httpGet:
+              path: /minio/health/ready
+              port: api
+            initialDelaySeconds: 30
+            periodSeconds: 10
+
+          command:
+            - minio
+            - server
+            - /data
+            - --console-address
+            - ":9001"
+
+          env:
+            # Credentials will come from a Kubernetes Secret.
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secret
+                  key: MINIO_ROOT_USER
+
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: minio-secret
+                  key: MINIO_ROOT_PASSWORD
+
+          volumeMounts:
+            - name: minio-data
+              mountPath: /data
+
+  volumeClaimTemplates:
+    - metadata:
+        name: minio-data
+
+      spec:
+        accessModes:
+          - ReadWriteOnce
+
+        resources:
+          requests:
+            storage: 20Gi
