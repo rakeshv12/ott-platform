@@ -136,7 +136,7 @@ resource "kubernetes_config_map_v1_data" "aws_auth" {
         ]
       },
       {
-        rolearn  = module.cicd.codebuild_role_arn
+        rolearn  = module.cicd.deploy_codebuild_role_arn
         username = "ott-platform-codebuild"
         groups = [
           "ott-platform-deployer"
