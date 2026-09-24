@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
-  namespace: ott-backend
+  namespace: ott-frontend
   labels:
     app: frontend
     component: frontend

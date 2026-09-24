@@ -1,0 +1,125 @@
+data.aws_eks_cluster_auth.this: Reading...
+module.cicd.aws_iam_role.codepipeline: Refreshing state... [id=ott-platform-dev-pipeline-role]
+module.cicd.aws_iam_role.deploy_codebuild: Refreshing state... [id=ott-platform-dev-deploy-role]
+module.cicd.aws_codeconnections_connection.github: Refreshing state... [id=arn:aws:codeconnections:us-east-1:416648267020:connection/3632328d-bddf-4030-a0a8-c8a8a9d1106f]
+module.eks.aws_iam_role.eks_cluster: Refreshing state... [id=ott-platform-dev-eks-cluster-role]
+module.cicd.aws_iam_role.codebuild: Refreshing state... [id=ott-platform-github-codebuild-role]
+module.ecr.aws_ecr_repository.this: Refreshing state... [id=ott-platform-dev]
+data.aws_eks_cluster.this: Reading...
+module.network.aws_eip.nat: Refreshing state... [id=eipalloc-0f37ed363a165731c]
+module.cicd.aws_s3_bucket.artifacts: Refreshing state... [id=ott-platform-dev-codepipeline-artifacts]
+data.aws_eks_cluster_auth.this: Read complete after 0s [id=ott-platform-dev]
+module.network.aws_vpc.this: Refreshing state... [id=vpc-09392a6d037ba8e29]
+data.aws_eks_cluster.this: Read complete after 1s [id=ott-platform-dev]
+module.eks.aws_iam_role.eks_node: Refreshing state... [id=ott-platform-dev-eks-node-role]
+module.network.data.aws_region.current: Reading...
+module.network.data.aws_region.current: Read complete after 0s [id=us-east-1]
+kubernetes_cluster_role_v1.ott_platform_deployer: Refreshing state... [id=ott-platform-deployer]
+kubernetes_namespace_v1.ott_backend: Refreshing state... [id=ott-backend]
+kubernetes_namespace_v1.ott_media: Refreshing state... [id=ott-media]
+module.eks.aws_iam_role_policy_attachment.eks_cluster: Refreshing state... [id=ott-platform-dev-eks-cluster-role/arn:aws:iam::aws:policy/AmazonEKSClusterPolicy]
+module.eks.aws_iam_role_policy_attachment.eks_node_cni: Refreshing state... [id=ott-platform-dev-eks-node-role/arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy]
+module.eks.aws_iam_role_policy_attachment.eks_node_ecr: Refreshing state... [id=ott-platform-dev-eks-node-role/arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPullOnly]
+module.eks.aws_iam_role_policy_attachment.eks_node_worker: Refreshing state... [id=ott-platform-dev-eks-node-role/arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy]
+kubernetes_cluster_role_binding_v1.ott_platform_deployer: Refreshing state... [id=ott-platform-deployer]
+module.cicd.aws_iam_role_policy.deploy_codebuild_logs: Refreshing state... [id=ott-platform-dev-deploy-role:ott-platform-dev-deploy-logs]
+module.cicd.aws_iam_role_policy.deploy_codebuild_eks: Refreshing state... [id=ott-platform-dev-deploy-role:ott-platform-dev-deploy-eks]
+module.cicd.aws_iam_role_policy.codebuild_eks: Refreshing state... [id=ott-platform-github-codebuild-role:ott-platform-github-codebuild-eks]
+module.cicd.aws_iam_role_policy.codebuild_ecr: Refreshing state... [id=ott-platform-github-codebuild-role:ott-platform-github-codebuild-ecr]
+module.cicd.aws_iam_role_policy.codebuild_logs: Refreshing state... [id=ott-platform-github-codebuild-role:ott-platform-github-codebuild-logs]
+module.cicd.aws_codebuild_project.ott: Refreshing state... [id=arn:aws:codebuild:us-east-1:416648267020:project/ott-platform-dev-build]
+module.network.aws_internet_gateway.this: Refreshing state... [id=igw-07052d79fe16edc03]
+module.network.aws_subnet.private["us-east-1b"]: Refreshing state... [id=subnet-01d25ee8c1116dcc4]
+module.network.aws_subnet.public["us-east-1b"]: Refreshing state... [id=subnet-0db3f5f33d5a387f9]
+module.network.aws_subnet.private["us-east-1a"]: Refreshing state... [id=subnet-0cbc158eef775a949]
+module.network.aws_subnet.public["us-east-1a"]: Refreshing state... [id=subnet-081534a5780b84c6f]
+module.network.aws_route_table.private: Refreshing state... [id=rtb-0b6510d467b2c198b]
+module.network.aws_route_table.public: Refreshing state... [id=rtb-0e2ce040933822373]
+module.network.aws_security_group.vpc_endpoints: Refreshing state... [id=sg-059bed7ad14cd8f47]
+module.redis.aws_security_group.redis: Refreshing state... [id=sg-054390bba47ff27c2]
+module.rds.aws_security_group.database: Refreshing state... [id=sg-0ff09c87eff19856a]
+module.rds.aws_db_subnet_group.database: Refreshing state... [id=ott-platform-dev-rds-subnet-group]
+module.eks.aws_eks_cluster.this: Refreshing state... [id=ott-platform-dev]
+module.redis.aws_elasticache_subnet_group.redis: Refreshing state... [id=ott-platform-dev-redis-subnet-group]
+module.network.aws_route.public_internet: Refreshing state... [id=r-rtb-0e2ce0409338223731080289494]
+module.network.aws_vpc_endpoint.ecr_dkr: Refreshing state... [id=vpce-09848ad5421328f24]
+module.network.aws_vpc_endpoint.ecr_api: Refreshing state... [id=vpce-0280034656ebe256f]
+module.network.aws_vpc_endpoint.secrets_manager: Refreshing state... [id=vpce-0cfd0cd4f56dbd4f0]
+module.eks.aws_eks_node_group.general: Refreshing state... [id=ott-platform-dev:ott-platform-dev-general]
+module.network.aws_vpc_endpoint.s3: Refreshing state... [id=vpce-09023e3c91a75d933]
+module.network.aws_route_table_association.private["us-east-1a"]: Refreshing state... [id=rtbassoc-083a18d737d590be6]
+module.network.aws_route_table_association.private["us-east-1b"]: Refreshing state... [id=rtbassoc-054642f3932320f59]
+module.network.aws_nat_gateway.this: Refreshing state... [id=nat-07e08ebf6da4af3ea]
+module.network.aws_route_table_association.public["us-east-1a"]: Refreshing state... [id=rtbassoc-09e6c01d6db54c0a4]
+module.network.aws_route_table_association.public["us-east-1b"]: Refreshing state... [id=rtbassoc-0b3cca60750b35cc1]
+module.cicd.aws_codebuild_project.deploy: Refreshing state... [id=arn:aws:codebuild:us-east-1:416648267020:project/ott-platform-dev-deploy]
+module.cicd.aws_iam_role_policy.codebuild_s3: Refreshing state... [id=ott-platform-github-codebuild-role:ott-platform-github-codebuild-s3]
+module.cicd.aws_s3_bucket_server_side_encryption_configuration.artifacts: Refreshing state... [id=ott-platform-dev-codepipeline-artifacts]
+module.cicd.aws_s3_bucket_public_access_block.artifacts: Refreshing state... [id=ott-platform-dev-codepipeline-artifacts]
+module.cicd.aws_s3_bucket_versioning.artifacts: Refreshing state... [id=ott-platform-dev-codepipeline-artifacts]
+module.network.aws_route.private_nat: Refreshing state... [id=r-rtb-0b6510d467b2c198b1080289494]
+module.cicd.aws_iam_role_policy.codepipeline: Refreshing state... [id=ott-platform-dev-pipeline-role:ott-platform-dev-pipeline-policy]
+module.cicd.aws_codepipeline.ott: Refreshing state... [id=ott-platform-dev-pipeline]
+module.rds.aws_db_instance.database: Refreshing state... [id=db-LP6O5QKGBCKJBSFNFGQXU55N24]
+module.redis.aws_elasticache_replication_group.redis: Refreshing state... [id=ott-platform-dev-redis]
+kubernetes_config_map_v1_data.aws_auth: Refreshing state... [id=kube-system/aws-auth]
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  + create
+  ~ update in-place
+
+Terraform will perform the following actions:
+
+  # kubernetes_namespace_v1.ott_backend will be updated in-place
+  ~ resource "kubernetes_namespace_v1" "ott_backend" {
+        id                               = "ott-backend"
+      + wait_for_default_service_account = false
+
+      ~ metadata {
+          ~ labels           = {
+              - "name" = "ott-backend" -> null
+            }
+            name             = "ott-backend"
+            # (5 unchanged attributes hidden)
+        }
+    }
+
+  # kubernetes_namespace_v1.ott_frontend will be created
+  + resource "kubernetes_namespace_v1" "ott_frontend" {
+      + id                               = (known after apply)
+      + wait_for_default_service_account = false
+
+      + metadata {
+          + generation       = (known after apply)
+          + name             = "ott-frontend"
+          + resource_version = (known after apply)
+          + uid              = (known after apply)
+        }
+    }
+
+  # kubernetes_namespace_v1.ott_media will be updated in-place
+  ~ resource "kubernetes_namespace_v1" "ott_media" {
+        id                               = "ott-media"
+      + wait_for_default_service_account = false
+
+      ~ metadata {
+          ~ annotations      = {
+              - "meta.helm.sh/release-name"      = "ott-platform" -> null
+              - "meta.helm.sh/release-namespace" = "ott-backend" -> null
+            }
+          ~ labels           = {
+              - "app.kubernetes.io/managed-by" = "Helm" -> null
+              - "environment"                  = "dev" -> null
+            }
+            name             = "ott-media"
+            # (4 unchanged attributes hidden)
+        }
+    }
+
+Plan: 1 to add, 2 to change, 0 to destroy.
+
+─────────────────────────────────────────────────────────────────────────────
+
+Note: You didn't use the -out option to save this plan, so Terraform can't
+guarantee to take exactly these actions if you run "terraform apply" now.
