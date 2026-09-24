@@ -203,6 +203,29 @@ resource "aws_codepipeline" "ott" {
     }
   }
 
+  # ---------------------------------------------------------------------------
+  # Deploy stage
+  # ---------------------------------------------------------------------------
+  # Sends the source artifact to the dedicated deployment CodeBuild project.
+  # The deployment project will later use Helm/kubectl to deploy the OTT
+  # application into the target EKS cluster.
+  stage {
+    name = "Deploy"
+
+    action {
+      name             = "EKSDeploy"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      version          = "1"
+      input_artifacts  = ["source_output"]
+
+      configuration = {
+        ProjectName = aws_codebuild_project.deploy.name
+      }
+    }
+  }
+
   tags = {
     Name        = var.codepipeline_name
     Environment = var.environment
@@ -267,6 +290,7 @@ resource "aws_codebuild_project" "ott" {
     ManagedBy   = "Terraform"
   }
 }
+
 
 
 # S3 bucket used by CodePipeline to temporarily store
