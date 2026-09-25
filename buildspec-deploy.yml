@@ -20,21 +20,20 @@ phases:
       - echo "Checking EKS cluster connectivity..."
       - kubectl cluster-info
 
-      # Read-only verification of the EKS worker nodes.
+      # Verify that the EKS worker nodes are available.
       - echo "Checking EKS worker nodes..."
       - kubectl get nodes
 
-      # Display the Git commit that this deployment is using.
+      # Display the Git commit being deployed.
       - echo "Deploying source version: $CODEBUILD_RESOLVED_SOURCE_VERSION"
 
   build:
     commands:
-      # Deploy the OTT platform using Helm.
-      # The image tags must match the tags created by buildspec.yml.
+      # Deploy all OTT application services using the images created by the Build stage.
+      # Keep this Helm command on one YAML line so CodeBuild parses it as one command.
       - echo "Deploying OTT platform with Helm..."
       - helm upgrade --install "$HELM_RELEASE_NAME" "$HELM_CHART_PATH" --namespace "$BACKEND_NAMESPACE" --create-namespace -f "$HELM_VALUES_FILE" --set auth.image.repository="$ECR_REPOSITORY_URL" --set auth.image.tag="auth-$CODEBUILD_RESOLVED_SOURCE_VERSION" --set catalog.image.repository="$ECR_REPOSITORY_URL" --set catalog.image.tag="catalog-$CODEBUILD_RESOLVED_SOURCE_VERSION" --set stream.image.repository="$ECR_REPOSITORY_URL" --set stream.image.tag="stream-$CODEBUILD_RESOLVED_SOURCE_VERSION" --set frontend.image.repository="$ECR_REPOSITORY_URL" --set frontend.image.tag="frontend-$CODEBUILD_RESOLVED_SOURCE_VERSION"
 
   post_build:
     commands:
-      # Display the final deployment status.
       - echo "OTT platform Helm deployment completed."
