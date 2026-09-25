@@ -14,20 +14,23 @@ phases:
   build:
     commands:
       # Build the Auth service image.
+      #
+      # BASE_IMAGE_REPOSITORY points to our trusted ECR repository
+      # containing the node:20-alpine base image.
       - echo "Building Auth service..."
-      - docker build -t $ECR_REPOSITORY_URL:auth-$CODEBUILD_RESOLVED_SOURCE_VERSION ./backend/auth
+      - docker build --build-arg BASE_IMAGE_REPOSITORY=$BASE_IMAGE_REPOSITORY -t $ECR_REPOSITORY_URL:auth-$CODEBUILD_RESOLVED_SOURCE_VERSION ./backend/auth
 
       # Build the Catalog service image.
       - echo "Building Catalog service..."
-      - docker build -t $ECR_REPOSITORY_URL:catalog-$CODEBUILD_RESOLVED_SOURCE_VERSION ./backend/catalog
+      - docker build --build-arg BASE_IMAGE_REPOSITORY=$BASE_IMAGE_REPOSITORY -t $ECR_REPOSITORY_URL:catalog-$CODEBUILD_RESOLVED_SOURCE_VERSION ./backend/catalog
 
       # Build the Stream service image.
       - echo "Building Stream service..."
-      - docker build -t $ECR_REPOSITORY_URL:stream-$CODEBUILD_RESOLVED_SOURCE_VERSION ./backend/stream
+      - docker build --build-arg BASE_IMAGE_REPOSITORY=$BASE_IMAGE_REPOSITORY -t $ECR_REPOSITORY_URL:stream-$CODEBUILD_RESOLVED_SOURCE_VERSION ./backend/stream
 
       # Build the Frontend image.
       - echo "Building Frontend..."
-      - docker build -t $ECR_REPOSITORY_URL:frontend-$CODEBUILD_RESOLVED_SOURCE_VERSION ./frontend/web
+      - docker build --build-arg BASE_IMAGE_REPOSITORY=$BASE_IMAGE_REPOSITORY -t $ECR_REPOSITORY_URL:frontend-$CODEBUILD_RESOLVED_SOURCE_VERSION ./frontend/web
 
   post_build:
     commands:
@@ -44,6 +47,5 @@ phases:
       # Push Frontend image to ECR.
       - echo "Pushing Frontend image..."
       - docker push $ECR_REPOSITORY_URL:frontend-$CODEBUILD_RESOLVED_SOURCE_VERSION
-
 
       - echo "OTT platform images successfully pushed to ECR."

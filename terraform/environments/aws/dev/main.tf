@@ -87,11 +87,12 @@ module "redis" {
 module "cicd" {
   source = "../../../modules/cicd"
 
-  github_connection_name = "ott-platform-github"
-  ecr_repository_arn     = module.ecr.repository_arn
+  github_connection_name     = "ott-platform-github"
+  ecr_repository_arn         = module.ecr.repository_arn
+  ecr_repository_url         = module.ecr.repository_url
+  base_images_repository_url = module.ecr.base_images_repository_url
 
   codebuild_project_name = var.codebuild_project_name
-  ecr_repository_url     = module.ecr.repository_url
   aws_region             = var.aws_region
   environment            = var.environment
   github_repository      = var.github_repository

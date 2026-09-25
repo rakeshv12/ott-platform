@@ -275,6 +275,14 @@ resource "aws_codebuild_project" "ott" {
       name  = "ECR_REPOSITORY_URL"
       value = var.ecr_repository_url
     }
+
+    environment_variable {
+      # ECR repository containing trusted Docker base images.
+      # CodeBuild will use this instead of pulling node:20-alpine
+      # directly from Docker Hub.
+      name  = "BASE_IMAGE_REPOSITORY"
+      value = var.base_images_repository_url
+    }
   }
 
   logs_config {
@@ -520,6 +528,35 @@ resource "aws_iam_role_policy" "deploy_codebuild_eks" {
         ]
 
         Resource = "*"
+      }
+    ]
+  })
+}
+
+# Allow the deployment CodeBuild project to read the
+# source artifact created by CodePipeline from S3.
+#
+# CodePipeline stores the source artifact in the artifact
+# bucket before passing it to the Deploy CodeBuild project.
+# CodeBuild therefore needs permission to download that
+# artifact during the DOWNLOAD_SOURCE phase.
+resource "aws_iam_role_policy" "deploy_codebuild_s3" {
+  name = "${var.deploy_codebuild_project_name}-s3"
+  role = aws_iam_role.deploy_codebuild.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Effect = "Allow"
+
+        Action = [
+          "s3:GetObject",
+          "s3:GetObjectVersion"
+        ]
+
+        Resource = "arn:aws:s3:::${var.artifact_bucket_name}/*"
       }
     ]
   })

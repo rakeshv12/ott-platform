@@ -32,19 +32,7 @@ phases:
       # Deploy the OTT platform using Helm.
       # The image tags must match the tags created by buildspec.yml.
       - echo "Deploying OTT platform with Helm..."
-
-      - helm upgrade --install "$HELM_RELEASE_NAME" "$HELM_CHART_PATH" \
-          --namespace "$BACKEND_NAMESPACE" \
-          --create-namespace \
-          -f "$HELM_VALUES_FILE" \
-          --set auth.image.repository="$ECR_REPOSITORY_URL" \
-          --set auth.image.tag="auth-$CODEBUILD_RESOLVED_SOURCE_VERSION" \
-          --set catalog.image.repository="$ECR_REPOSITORY_URL" \
-          --set catalog.image.tag="catalog-$CODEBUILD_RESOLVED_SOURCE_VERSION" \
-          --set stream.image.repository="$ECR_REPOSITORY_URL" \
-          --set stream.image.tag="stream-$CODEBUILD_RESOLVED_SOURCE_VERSION" \
-          --set frontend.image.repository="$ECR_REPOSITORY_URL" \
-          --set frontend.image.tag="frontend-$CODEBUILD_RESOLVED_SOURCE_VERSION"
+      - helm upgrade --install "$HELM_RELEASE_NAME" "$HELM_CHART_PATH" --namespace "$BACKEND_NAMESPACE" --create-namespace -f "$HELM_VALUES_FILE" --set auth.image.repository="$ECR_REPOSITORY_URL" --set auth.image.tag="auth-$CODEBUILD_RESOLVED_SOURCE_VERSION" --set catalog.image.repository="$ECR_REPOSITORY_URL" --set catalog.image.tag="catalog-$CODEBUILD_RESOLVED_SOURCE_VERSION" --set stream.image.repository="$ECR_REPOSITORY_URL" --set stream.image.tag="stream-$CODEBUILD_RESOLVED_SOURCE_VERSION" --set frontend.image.repository="$ECR_REPOSITORY_URL" --set frontend.image.tag="frontend-$CODEBUILD_RESOLVED_SOURCE_VERSION"
 
   post_build:
     commands:

@@ -83,3 +83,7 @@ variable "media_namespace" {
   type        = string
 }
 
+variable "base_images_repository_url" {
+  description = "URL of the ECR repository containing Docker base images"
+  type        = string
+}
