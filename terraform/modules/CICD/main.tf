@@ -155,9 +155,37 @@ resource "aws_iam_role_policy" "codebuild_ecr" {
 # Flow:
 # GitHub → CodeConnections → CodePipeline → CodeBuild → ECR
 
+# AWS CodePipeline orchestrates the complete AWS-native CI/CD workflow.
+#
+# Flow:
+# GitHub → CodeConnections → CodePipeline → CodeBuild → ECR → EKS
+#
+# Pipeline V2 is used because it supports explicit Git-based triggers.
 resource "aws_codepipeline" "ott" {
-  name     = var.codepipeline_name
-  role_arn = aws_iam_role.codepipeline.arn
+  name          = var.codepipeline_name
+  role_arn      = aws_iam_role.codepipeline.arn
+  pipeline_type = "V2"
+
+  # Automatically start the pipeline when code is pushed
+  # to the configured GitHub branch.
+  #
+  # The trigger is handled by CodeConnections, so we do not
+  # need to create a separate GitHub webhook or EventBridge rule.
+  trigger {
+    provider_type = "CodeStarSourceConnection"
+
+    git_configuration {
+      # This must match the name of the source action below.
+      source_action_name = "GitHub"
+
+      push {
+        branches {
+          # Only pushes to the configured branch trigger the pipeline.
+          includes = [var.github_branch]
+        }
+      }
+    }
+  }
 
   # S3 stores artifacts exchanged between pipeline stages.
   artifact_store {
@@ -165,7 +193,10 @@ resource "aws_codepipeline" "ott" {
     type     = "S3"
   }
 
-  # Source stage: retrieves code from GitHub.
+  # ---------------------------------------------------------------------------
+  # Source stage
+  # ---------------------------------------------------------------------------
+  # Retrieves source code from the GitHub repository through CodeConnections.
   stage {
     name = "Source"
 
@@ -185,7 +216,15 @@ resource "aws_codepipeline" "ott" {
     }
   }
 
-  # Build stage: sends the GitHub source artifact to CodeBuild.
+  # ---------------------------------------------------------------------------
+  # Build stage
+  # ---------------------------------------------------------------------------
+  # Sends the source artifact to the Docker Build CodeBuild project.
+  #
+  # CodeBuild:
+  # 1. Builds Auth, Catalog, Stream and Frontend images.
+  # 2. Uses the private ECR base image.
+  # 3. Pushes application images to ECR.
   stage {
     name = "Build"
 
@@ -195,7 +234,7 @@ resource "aws_codepipeline" "ott" {
       owner           = "AWS"
       provider        = "CodeBuild"
       version         = "1"
-      input_artifacts  = ["source_output"]
+      input_artifacts = ["source_output"]
 
       configuration = {
         ProjectName = aws_codebuild_project.ott.name
@@ -206,19 +245,24 @@ resource "aws_codepipeline" "ott" {
   # ---------------------------------------------------------------------------
   # Deploy stage
   # ---------------------------------------------------------------------------
-  # Sends the source artifact to the dedicated deployment CodeBuild project.
-  # The deployment project will later use Helm/kubectl to deploy the OTT
-  # application into the target EKS cluster.
+  # Sends the same source artifact to the dedicated deployment
+  # CodeBuild project.
+  #
+  # The deployment project:
+  # 1. Configures kubectl for EKS.
+  # 2. Verifies cluster connectivity.
+  # 3. Runs Helm upgrade/install.
+  # 4. Deploys the application into EKS.
   stage {
     name = "Deploy"
 
     action {
-      name             = "EKSDeploy"
-      category         = "Build"
-      owner            = "AWS"
-      provider         = "CodeBuild"
-      version          = "1"
-      input_artifacts  = ["source_output"]
+      name            = "EKSDeploy"
+      category        = "Build"
+      owner           = "AWS"
+      provider        = "CodeBuild"
+      version         = "1"
+      input_artifacts = ["source_output"]
 
       configuration = {
         ProjectName = aws_codebuild_project.deploy.name
@@ -226,6 +270,7 @@ resource "aws_codepipeline" "ott" {
     }
   }
 
+  # Standard resource tags.
   tags = {
     Name        = var.codepipeline_name
     Environment = var.environment
