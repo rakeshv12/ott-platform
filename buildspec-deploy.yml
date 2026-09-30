@@ -27,7 +27,7 @@ phases:
       # Display the Git commit being deployed.
       - echo "Deploying source version: $CODEBUILD_RESOLVED_SOURCE_VERSION"
 
-    build:
+  build:
     commands:
       # Deploy all OTT application services using the images created by the Build stage.
       - echo "Deploying OTT platform with Helm..."
