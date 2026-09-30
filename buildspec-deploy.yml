@@ -8,6 +8,12 @@ phases:
       - echo "Starting OTT platform deployment..."
       - aws --version
       - kubectl version --client=true
+      # Install Helm because the CodeBuild standard image does not
+      # provide the Helm CLI by default.
+      - echo "Installing Helm..."
+      - curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      # Verify the Helm installation.
       - helm version
 
   pre_build:
