@@ -124,6 +124,8 @@ resource "aws_iam_role_policy" "codebuild_ecr" {
     Version = "2012-10-17"
 
     Statement = [
+      # Allow CodeBuild to obtain an authentication token
+      # for Amazon ECR.
       {
         Effect = "Allow"
 
@@ -133,6 +135,9 @@ resource "aws_iam_role_policy" "codebuild_ecr" {
 
         Resource = "*"
       },
+
+      # Allow CodeBuild to push the application images
+      # into the main OTT platform ECR repository.
       {
         Effect = "Allow"
 
@@ -145,6 +150,24 @@ resource "aws_iam_role_policy" "codebuild_ecr" {
         ]
 
         Resource = var.ecr_repository_arn
+      },
+
+      # Allow CodeBuild to pull the shared Docker base image
+      # from the dedicated base-images ECR repository.
+      #
+      # This is required because the application Dockerfiles
+      # use:
+      # FROM ${BASE_IMAGE_REPOSITORY}:node-20-alpine
+      {
+        Effect = "Allow"
+
+        Action = [
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage"
+        ]
+
+        Resource = var.base_images_repository_arn
       }
     ]
   })

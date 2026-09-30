@@ -91,6 +91,7 @@ module "cicd" {
   ecr_repository_arn         = module.ecr.repository_arn
   ecr_repository_url         = module.ecr.repository_url
   base_images_repository_url = module.ecr.base_images_repository_url
+  base_images_repository_arn = module.ecr.base_images_repository_arn
 
   codebuild_project_name = var.codebuild_project_name
   aws_region             = var.aws_region

@@ -8,6 +8,11 @@ variable "ecr_repository_arn" {
   type        = string
 }
 
+variable "base_images_repository_arn" {
+  description = "ARN of the ECR repository containing Docker base images that CodeBuild can pull"
+  type        = string
+}
+
 variable "codebuild_project_name" {
   description = "Name of the AWS CodeBuild project"
   type        = string
