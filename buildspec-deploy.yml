@@ -18,8 +18,8 @@ phases:
       - aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name $EKS_CLUSTER_NAME
       - echo "Checking EKS cluster connectivity..."
       - kubectl cluster-info
-      - echo "Checking EKS worker nodes..."
-      - kubectl get nodes
+      - echo "Checking EKS cluster connectivity..."
+      - kubectl cluster-info
       - echo "Deploying source version $CODEBUILD_RESOLVED_SOURCE_VERSION"
 
   build:
