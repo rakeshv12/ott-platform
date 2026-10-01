@@ -4,39 +4,48 @@ phases:
 
   install:
     commands:
-      # Display the deployment tools available in the CodeBuild environment.
+      # Start deployment.
       - echo "Starting OTT platform deployment..."
+
+      # Verify AWS CLI.
       - aws --version
+
+      # Verify kubectl.
       - kubectl version --client=true
-      # Install Helm because the CodeBuild standard image does not
-      # provide the Helm CLI by default.
+
+      # Install Helm.
       - echo "Installing Helm..."
       - curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
-      # Verify the Helm installation.
+      # Verify Helm installation.
       - helm version
 
   pre_build:
     commands:
-      # Configure kubectl to communicate with the target EKS cluster.
+      # Configure kubectl to communicate with the EKS cluster.
       - echo "Configuring kubectl for EKS..."
       - aws eks update-kubeconfig --region "$AWS_DEFAULT_REGION" --name "$EKS_CLUSTER_NAME"
 
-      # Verify that the EKS cluster is reachable.
+      # Verify EKS connectivity.
       - echo "Checking EKS cluster connectivity..."
       - kubectl cluster-info
 
-      # Verify that the EKS worker nodes are available.
+      # Verify worker nodes.
       - echo "Checking EKS worker nodes..."
       - kubectl get nodes
 
-      # Display the Git commit being deployed.
+      # Display the commit being deployed.
       - echo "Deploying source version: $CODEBUILD_RESOLVED_SOURCE_VERSION"
 
   build:
     commands:
+      # Deploy the OTT platform using Helm.
       - echo "Deploying OTT platform with Helm..."
-      - helm upgrade --install "$HELM_RELEASE_NAME" "$HELM_CHART_PATH" --namespace "$BACKEND_NAMESPACE" --create-namespace -f "$HELM_VALUES_FILE" --set "auth.image.repository=$ECR_REPOSITORY_URL" --set "auth.image.tag=auth-$CODEBUILD_RESOLVED_SOURCE_VERSION" --set "catalog.image.repository=$ECR_REPOSITORY_URL" --set "catalog.image.tag=catalog-$CODEBUILD_RESOLVED_SOURCE_VERSION" --set "stream.image.repository=$ECR_REPOSITORY_URL" --set "stream.image.tag=stream-$CODEBUILD_RESOLVED_SOURCE_VERSION" --set "frontend.image.repository=$ECR_REPOSITORY_URL" --set "frontend.image.tag=frontend-$CODEBUILD_RESOLVED_SOURCE_VERSION"
+
+      # Keep the complete Helm command inside a YAML block scalar.
+      - |
+        helm upgrade --install "$HELM_RELEASE_NAME" "$HELM_CHART_PATH" --namespace "$BACKEND_NAMESPACE" --create-namespace -f "$HELM_VALUES_FILE" --set "auth.image.repository=$ECR_REPOSITORY_URL" --set "auth.image.tag=auth-$CODEBUILD_RESOLVED_SOURCE_VERSION" --set "catalog.image.repository=$ECR_REPOSITORY_URL" --set "catalog.image.tag=catalog-$CODEBUILD_RESOLVED_SOURCE_VERSION" --set "stream.image.repository=$ECR_REPOSITORY_URL" --set "stream.image.tag=stream-$CODEBUILD_RESOLVED_SOURCE_VERSION" --set "frontend.image.repository=$ECR_REPOSITORY_URL" --set "frontend.image.tag=frontend-$CODEBUILD_RESOLVED_SOURCE_VERSION"
+
   post_build:
     commands:
       - echo "OTT platform Helm deployment completed."
