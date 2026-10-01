@@ -9,6 +9,16 @@ This directory is the engineering record for the OTT platform.
 - Current issues: missing Kubernetes Secret `ott-secrets` causes Auth/Catalog `CreateContainerConfigError`; MinIO is Pending; frontend namespace/service alignment needs reconciliation.
 - Planned: portable External Secrets design, AWS Secrets Manager integration, Azure Key Vault and bare-metal Vault variants, production hardening, observability, HA/DR and cost optimization.
 
+## Interview preparation
+
+- [Complete Interview Preparation](interview/README.md)
+- [Architecture Interview Questions](architecture/interview-questions.md)
+- [Infrastructure Interview Questions](infrastructure/interview-questions.md)
+- [CI/CD Interview Questions](cicd/interview-questions.md)
+- [Kubernetes Interview Questions](kubernetes/interview-questions.md)
+- [Security Interview Questions](security/interview-questions.md)
+- [Scenario-Based Troubleshooting Questions](troubleshooting/scenario-based-questions.md)
+
 ## Core documents
 
 - [Architecture Overview](architecture/overview.md)
