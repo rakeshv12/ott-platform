@@ -46,3 +46,5 @@
 
 ## CI/CD interpretation
 The latest successful EKSDeploy stage did not execute Helm. It verified EKS connectivity. Stage success must be interpreted from the commands actually executed.
+
+Detailed incident record: [CI/CD Deploy Stage Not Running Helm](./issue-cicd-deploy-stage-not-running-helm.md)
