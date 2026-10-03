@@ -234,25 +234,7 @@ These should be treated as separate issues rather than mixing secret management 
 
 ## 8. Correct Resolution Design
 
-The deployment stage should call a version-controlled deployment script rather than putting a large Helm command directly into a complex buildspec.
-
-Recommended structure:
-
-```text
-ott-platform/
-|
-+-- buildspec-deploy.yml
-|
-+-- scripts/
-|    |
-|    +-- deploy.sh
-|
-+-- Helm/
-     |
-     +-- ott/
-```
-
-The deployment flow should become:
+The immediate fix is to execute Helm directly from the Deploy CodeBuild buildspec. A separate deploy.sh script was considered, but the deployment logic is small enough to remain directly in buildspec-deploy.yml.
 
 ```text
 Deploy CodeBuild
@@ -261,23 +243,39 @@ Deploy CodeBuild
 buildspec-deploy.yml
       |
       v
-scripts/deploy.sh
-      |
-      +--> aws eks update-kubeconfig
-      |
-      +--> verify EKS connectivity
-      |
-      +--> helm upgrade --install
-      |
-      +--> verify rollout/status
+Helm
       |
       v
-EKS application state
+EKS
 ```
 
-This also keeps deployment logic version-controlled and easier to test locally.
+The buildspec now:
 
----
+1. Configures kubectl for EKS.
+2. Verifies EKS connectivity.
+3. Executes `helm upgrade --install`.
+4. Uses the environment values file.
+5. Overrides the four application image tags with the current CodePipeline source revision.
+6. Waits up to ten minutes for Helm to complete.
+7. Reports the Helm release status.
+
+The deployment command is:
+
+```bash
+helm upgrade --install $HELM_RELEASE_NAME $HELM_CHART_PATH \
+  --namespace $BACKEND_NAMESPACE \
+  --values $HELM_VALUES_FILE \
+  --set auth.image.tag=auth-$CODEBUILD_RESOLVED_SOURCE_VERSION \
+  --set catalog.image.tag=catalog-$CODEBUILD_RESOLVED_SOURCE_VERSION \
+  --set stream.image.tag=stream-$CODEBUILD_RESOLVED_SOURCE_VERSION \
+  --set frontend.image.tag=frontend-$CODEBUILD_RESOLVED_SOURCE_VERSION \
+  --wait \
+  --timeout 10m
+```
+
+This is important because values-dev.yaml contains historical image tags. The deploy stage now derives image tags from the same source revision that triggered the pipeline, so the EKS deployment uses the images produced by that pipeline execution.
+
+Manual Helm deployment from the developer workstation is not part of the target architecture.
 
 ## 9. Deployment Verification
 
@@ -397,32 +395,24 @@ Do not assume that a stage named `EKSDeploy` performed a deployment. Confirm the
 | Deploy CodeBuild | Implemented |
 | EKS authentication | Implemented |
 | EKS connectivity verification | Implemented |
-| Actual Helm execution in deploy stage | **Not yet implemented** |
-| Frontend namespace reconciliation | **Pending actual Helm deployment** |
+| Actual Helm execution in deploy stage | **Implemented** |
+| Helm wait/status verification | **Implemented** |
+| Frontend namespace reconciliation | **Pending pipeline verification** |
 | `ott-secrets` | **Pending** |
 | RDS/Redis application configuration | **Pending** |
 | MinIO Pending investigation | **Pending** |
 
----
-
 ## 14. Next Action
 
-The immediate implementation task is:
+Run the AWS CodePipeline and inspect the EKSDeploy CodeBuild logs.
 
-```text
-Create scripts/deploy.sh
-        |
-        v
-Update buildspec-deploy.yml
-        |
-        v
-Run Helm from CodeBuild
-        |
-        v
-Trigger CodePipeline
-        |
-        v
-Verify actual EKS resource reconciliation
+```powershell
+aws codepipeline start-pipeline-execution `
+  --name ott-platform-dev-pipeline `
+  --region us-east-1 `
+  --profile ott-admin
 ```
 
-Only after this is working should we move to the `ott-secrets`, RDS/Redis, and MinIO issues.
+The critical verification is that the EKSDeploy logs now contain an actual `helm upgrade --install` operation.
+
+If Helm fails, that failure becomes the next concrete troubleshooting issue. The pipeline should not be made artificially green by removing deployment verification.
