@@ -18,14 +18,28 @@ phases:
       - aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name $EKS_CLUSTER_NAME
       - echo "Checking EKS cluster connectivity..."
       - kubectl cluster-info
-      - echo "Checking EKS cluster connectivity..."
-      - kubectl cluster-info
       - echo "Deploying source version $CODEBUILD_RESOLVED_SOURCE_VERSION"
 
   build:
     commands:
       - echo "Starting Helm deployment..."
+      - echo "Using Helm chart $HELM_CHART_PATH"
+      - echo "Using Helm values $HELM_VALUES_FILE"
+      - echo "Deploying images tagged with source version $CODEBUILD_RESOLVED_SOURCE_VERSION"
+      - >
+        helm upgrade --install $HELM_RELEASE_NAME $HELM_CHART_PATH
+        --namespace $BACKEND_NAMESPACE
+        --values $HELM_VALUES_FILE
+        --set auth.image.tag=auth-$CODEBUILD_RESOLVED_SOURCE_VERSION
+        --set catalog.image.tag=catalog-$CODEBUILD_RESOLVED_SOURCE_VERSION
+        --set stream.image.tag=stream-$CODEBUILD_RESOLVED_SOURCE_VERSION
+        --set frontend.image.tag=frontend-$CODEBUILD_RESOLVED_SOURCE_VERSION
+        --wait
+        --timeout 10m
+      - echo "Helm release status:"
+      - helm status $HELM_RELEASE_NAME --namespace $BACKEND_NAMESPACE
 
   post_build:
     commands:
-      - echo "Deployment phase completed."
+      - echo "Helm deployment command completed successfully."
+      - echo "Deployment stage completed for source version $CODEBUILD_RESOLVED_SOURCE_VERSION"
