@@ -13,7 +13,8 @@
 global:
   environment: dev
   database:
-    host: postgres
+    host: ott-platform-dev-postgres.cglme6k8amk5.us-east-1.rds.amazonaws.com
+    ssl: true
   redis:
     host: redis
 

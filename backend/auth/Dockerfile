@@ -12,6 +12,7 @@ RUN npm install --production
 
 # Copy application source.
 COPY index.js .
+COPY certs/ ./certs/
 
 # Run the application as a non-root user for better container security.
 RUN addgroup -S ottgroup && adduser -S ottuser -G ottgroup

@@ -21,6 +21,9 @@ const pool = new Pool({
   user: process.env.POSTGRES_USER,
   password: process.env.POSTGRES_PASSWORD,
   database: process.env.CATALOG_DB || 'catalogdb',
+  ssl: process.env.POSTGRES_SSL === 'true'
+    ? { rejectUnauthorized: true }
+    : false,
 })
 
 // ── Redis ─────────────────────────────────────────────────

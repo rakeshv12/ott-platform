@@ -61,6 +61,12 @@ spec:
             - name: CATALOG_DB
               value: "catalogdb"
 
+            - name: POSTGRES_SSL
+              value: {{ .Values.global.database.ssl | quote }}
+
+            - name: NODE_EXTRA_CA_CERTS
+              value: "/app/certs/rds-ca.pem"
+
           livenessProbe:
             httpGet:
               path: /health
