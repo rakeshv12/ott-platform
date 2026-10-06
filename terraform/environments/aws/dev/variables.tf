@@ -143,3 +143,12 @@ variable "application_secret_name" {
   description = "AWS Secrets Manager name for application secrets"
   type        = string
 }
+
+variable "ebs_csi_addon_version" {
+  description = "EBS CSI driver add-on version"
+  type        = string
+}
+
+variable "ebs_storage_class_name" {
+  type = string
+}

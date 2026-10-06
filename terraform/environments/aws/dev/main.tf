@@ -317,3 +317,22 @@ module "external_secrets" {
     aws_eks_pod_identity_association.external_secrets
   ]
 }
+
+module "ebs_csi" {
+  source = "../../../modules/ebs-csi"
+
+  providers = {
+    aws = aws
+    kubernetes = kubernetes
+  }
+
+  project_name  = var.project_name
+  environment   = var.environment
+  cluster_name  = module.eks.cluster_name
+  addon_version = var.ebs_csi_addon_version
+  storage_class_name = var.ebs_storage_class_name
+
+  depends_on = [
+    aws_eks_addon.pod_identity_agent
+  ]
+}

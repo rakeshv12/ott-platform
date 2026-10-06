@@ -37,3 +37,5 @@ backend_namespace             = "ott-backend"
 media_namespace               = "ott-media"
 
 application_secret_name = "ott-platform/dev/application"
+ebs_csi_addon_version   = "v1.66.0-eksbuild.1"
+ebs_storage_class_name = "gp3"
