@@ -7,6 +7,8 @@ phases:
       - echo "Starting OTT platform deployment..."
       - aws --version
       - kubectl version --client=true
+
+      # Install Helm inside the CodeBuild environment.
       - echo "Installing Helm..."
       - curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
       - echo "Helm installation completed."
@@ -14,18 +16,29 @@ phases:
 
   pre_build:
     commands:
+      # Configure kubectl to communicate with the EKS cluster.
       - echo "Configuring kubectl for EKS..."
       - aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name $EKS_CLUSTER_NAME
+
+      # Verify that the CodeBuild environment can reach the EKS API server.
       - echo "Checking EKS cluster connectivity..."
       - kubectl cluster-info
+
+      # Display the Git commit being deployed.
       - echo "Deploying source version $CODEBUILD_RESOLVED_SOURCE_VERSION"
 
   build:
     commands:
       - echo "Starting Helm deployment..."
+
+      # Display deployment configuration for troubleshooting.
       - echo "Using Helm chart $HELM_CHART_PATH"
       - echo "Using Helm values $HELM_VALUES_FILE"
+
+      # Deploy the images produced by the Build stage.
       - echo "Deploying images tagged with source version $CODEBUILD_RESOLVED_SOURCE_VERSION"
+
+      # Install or upgrade the OTT platform Helm release.
       - >
         helm upgrade --install $HELM_RELEASE_NAME $HELM_CHART_PATH
         --namespace $BACKEND_NAMESPACE
@@ -36,6 +49,8 @@ phases:
         --set frontend.image.tag=frontend-$CODEBUILD_RESOLVED_SOURCE_VERSION
         --wait
         --timeout 10m
+
+      # Display the final Helm release status.
       - echo "Helm release status:"
       - helm status $HELM_RELEASE_NAME --namespace $BACKEND_NAMESPACE
 
