@@ -51,10 +51,10 @@ spec:
               value: "{{ .Values.auth.service.port }}"
 
             - name: POSTGRES_HOST
-              value: "postgres"
+              value: {{ .Values.global.database.host | quote }}
 
             - name: REDIS_HOST
-              value: "redis"
+              value: {{ .Values.global.redis.host | quote }}
 
             # Database credentials come from Kubernetes Secret.
             - name: POSTGRES_USER

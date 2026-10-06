@@ -40,10 +40,11 @@ spec:
               value: "{{ .Values.catalog.service.port }}"
 
             - name: POSTGRES_HOST
-              value: "postgres"
+              value: {{ .Values.global.database.host | quote }}
+
 
             - name: REDIS_HOST
-              value: "redis"
+              value: {{ .Values.global.redis.host | quote }}
 
             - name: POSTGRES_USER
               valueFrom:
