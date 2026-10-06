@@ -35,3 +35,5 @@ deploy_codebuild_project_name = "ott-platform-dev-deploy"
 helm_release_name             = "ott-platform"
 backend_namespace             = "ott-backend"
 media_namespace               = "ott-media"
+
+application_secret_name = "ott-platform/dev/application"

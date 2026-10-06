@@ -138,3 +138,8 @@ variable "media_namespace" {
   description = "Kubernetes namespace for OTT media services"
   type        = string
 }
+
+variable "application_secret_name" {
+  description = "AWS Secrets Manager name for application secrets"
+  type        = string
+}

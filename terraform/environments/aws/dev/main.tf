@@ -258,6 +258,20 @@ resource "kubernetes_cluster_role_v1" "ott_platform_deployer" {
       "delete"
     ]
   }
+  # Read ReplicaSets while Helm waits for Deployments.
+  rule {
+    api_groups = ["apps"]
+    resources  = ["replicasets"]
+    verbs      = ["get", "list", "watch"]
+  }
+
+  # Read Pods while Helm checks workload readiness.
+  rule {
+    api_groups = [""]
+    resources  = ["pods"]
+    verbs      = ["get", "list", "watch"]
+  }
+
 }
 
 # -----------------------------------------------------------------------------
@@ -284,4 +298,22 @@ resource "kubernetes_cluster_role_binding_v1" "ott_platform_deployer" {
     name      = "ott-platform-deployer"
     api_group = "rbac.authorization.k8s.io"
   }
+}
+
+module "external_secrets" {
+  source = "../../../modules/external-secrets"
+
+  providers = {
+    kubernetes = kubernetes
+  }
+
+  aws_region             = var.aws_region
+  namespace              = var.backend_namespace
+  rds_secret_arn         = module.rds.master_user_secret_arn
+  application_secret_arn = aws_secretsmanager_secret.application.arn
+  database_name          = var.database_name
+
+  depends_on = [
+    aws_eks_pod_identity_association.external_secrets
+  ]
 }
