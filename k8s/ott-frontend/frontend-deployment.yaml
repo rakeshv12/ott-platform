@@ -34,7 +34,8 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "500m"
-          name: HOSTNAME
+          name: 
+            - name: HOSTNAME
               value: "0.0.0.0"
             - name: PORT
               value: "3000"
