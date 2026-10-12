@@ -6,8 +6,10 @@ global:
   environment: dev
   database:
     host: ott-platform-dev-postgres.cglme6k8amk5.us-east-1.rds.amazonaws.com
+    ssl: true
   redis:
     host: master.ott-platform-dev-redis.kwbhne.use1.cache.amazonaws.com
+    tls: true
 
 # ------------------------------------------------------------
 # Auth Service
@@ -49,4 +51,8 @@ postgres:
 
 redis:
   enabled: false
+
+redis:
+  host: master.ott-platform-dev-redis.kwbhne.use1.cache.amazonaws.com
+  tls: true
 

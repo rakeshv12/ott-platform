@@ -23,7 +23,14 @@ const pool = new Pool({
 
 // ── Redis ────────────────────────────────────────────────────
 const redisClient = redis.createClient({
-  url: `redis://${process.env.REDIS_HOST || 'redis'}:6379`,
+  url: `${process.env.REDIS_TLS === 'true' ? 'rediss' : 'redis'}://${process.env.REDIS_HOST || 'redis'}:6379`,
+  socket: {
+    connectTimeout: 5000,
+  },
+  disableOfflineQueue: true,
+});
+redisClient.on('error', error => {
+  console.error('Redis connection error:', error.message);
 });
 redisClient.connect().catch(console.error);
 

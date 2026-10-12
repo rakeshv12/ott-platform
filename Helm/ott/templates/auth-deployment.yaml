@@ -87,6 +87,9 @@ spec:
             - name: NODE_EXTRA_CA_CERTS
               value: "/app/certs/rds-ca.pem"
 
+            - name: REDIS_TLS
+              value: {{ .Values.global.redis.tls | quote }}
+
           # Kubernetes uses this endpoint to determine
           # whether the application is alive.
           livenessProbe:

@@ -32,9 +32,15 @@ export async function getServerSideProps() {
 
   try {
     const [moviesRes, seriesRes, trendingRes] = await Promise.all([
-      fetch(`${API}/catalog/movies`),
-      fetch(`${API}/catalog/series`),
-      fetch(`${API}/catalog/trending`),
+      fetch(`${API}/catalog/movies`, {
+        signal: AbortSignal.timeout(10000),
+      }),
+      fetch(`${API}/catalog/series`, {
+        signal: AbortSignal.timeout(10000),
+      }),
+      fetch(`${API}/catalog/trending`, {
+        signal: AbortSignal.timeout(10000),
+      }),
     ])
 
     const movies   = await moviesRes.json()

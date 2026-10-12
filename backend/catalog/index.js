@@ -28,8 +28,16 @@ const pool = new Pool({
 
 // ── Redis ─────────────────────────────────────────────────
 const redisClient = redis.createClient({
-  url: `redis://${process.env.REDIS_HOST || 'redis'}:6379`,
-})
+  url: `${process.env.REDIS_TLS === 'true' ? 'rediss' : 'redis'}://${process.env.REDIS_HOST || 'redis'}:6379`,
+  socket: {
+    connectTimeout: 5000,
+  },
+  disableOfflineQueue: true,
+});
+
+redisClient.on('error', error => {
+  console.error('Redis connection error:', error.message);
+});
 redisClient.connect().catch(console.error)
 
 // ── DB init ───────────────────────────────────────────────
@@ -73,6 +81,44 @@ async function initDB() {
   console.log('Catalog database initialised')
 }
 
+function withCacheTimeout(operation, milliseconds = 1000) {
+  let timer;
+
+  return Promise.race([
+    operation,
+    new Promise((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error('Cache timeout')),
+        milliseconds
+      );
+    }),
+  ]).finally(() => clearTimeout(timer));
+}
+
+async function readCache(key) {
+  if (!redisClient.isReady) return null;
+
+  try {
+    const value = await withCacheTimeout(redisClient.get(key));
+    return value ? JSON.parse(value) : null;
+  } catch (error) {
+    console.warn('Cache read skipped:', error.message);
+    return null;
+  }
+}
+
+async function writeCache(key, rows) {
+  if (!redisClient.isReady) return;
+
+  try {
+    await withCacheTimeout(
+      redisClient.setEx(key, 300, JSON.stringify(rows))
+    );
+  } catch (error) {
+    console.warn('Cache write skipped:', error.message);
+  }
+}
+
 // ── Routes ────────────────────────────────────────────────
 
 // Health check
@@ -81,13 +127,13 @@ app.get('/health', (req, res) => res.json({ status: 'ok', service: 'catalog' }))
 // Get all movies
 app.get('/catalog/movies', async (req, res) => {
   try {
-    const cached = await redisClient.get('movies')
-    if (cached) return res.json(JSON.parse(cached))
+    const cached = await readCache('movies')
+    if (cached !== null) return res.json(cached)
 
     const result = await pool.query(
       "SELECT * FROM content WHERE type = 'movie' ORDER BY created_at DESC"
     )
-    await redisClient.setEx('movies', 300, JSON.stringify(result.rows))
+    await writeCache('movies', result.rows)
     res.json(result.rows)
   } catch (err) {
     console.error(err)
