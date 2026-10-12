@@ -272,6 +272,12 @@ resource "kubernetes_cluster_role_v1" "ott_platform_deployer" {
     verbs      = ["get", "list", "watch"]
   }
 
+  rule {
+    api_groups = ["networking.k8s.io"]
+    resources  = ["ingresses"]
+    verbs      = ["get", "list", "watch", "create", "update", "patch", "delete"]
+  }
+
 }
 
 # -----------------------------------------------------------------------------
@@ -291,9 +297,10 @@ resource "kubernetes_cluster_role_binding_v1" "ott_platform_deployer" {
     api_group = "rbac.authorization.k8s.io"
     kind      = "ClusterRole"
     name      = kubernetes_cluster_role_v1.ott_platform_deployer.metadata[0].name
-  }
 
-  subject {
+    }
+
+ subject {
     kind      = "Group"
     name      = "ott-platform-deployer"
     api_group = "rbac.authorization.k8s.io"
@@ -331,6 +338,26 @@ module "ebs_csi" {
   cluster_name  = module.eks.cluster_name
   addon_version = var.ebs_csi_addon_version
   storage_class_name = var.ebs_storage_class_name
+
+  depends_on = [
+    aws_eks_addon.pod_identity_agent
+  ]
+}
+
+module "load_balancer_controller" {
+  source = "../../../modules/load-balancer-controller"
+
+  providers = {
+    aws  = aws
+    helm = helm
+  }
+
+  project_name  = var.project_name
+  environment   = var.environment
+  cluster_name  = module.eks.cluster_name
+  aws_region    = var.aws_region
+  vpc_id        = module.network.vpc_id
+  chart_version = var.load_balancer_controller_chart_version
 
   depends_on = [
     aws_eks_addon.pod_identity_agent

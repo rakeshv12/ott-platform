@@ -152,3 +152,13 @@ variable "ebs_csi_addon_version" {
 variable "ebs_storage_class_name" {
   type = string
 }
+
+variable "aws_profile" {
+  description = "AWS CLI profile for this environment"
+  type        = string
+}
+
+variable "load_balancer_controller_chart_version" {
+  description = "Controller Helm chart version for this environment"
+  type        = string
+}

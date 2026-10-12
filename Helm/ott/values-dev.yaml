@@ -56,3 +56,10 @@ redis:
   host: master.ott-platform-dev-redis.kwbhne.use1.cache.amazonaws.com
   tls: true
 
+ingress:
+  enabled: true
+  className: alb
+  namespace: ott-frontend
+  scheme: internet-facing
+  targetType: ip
+

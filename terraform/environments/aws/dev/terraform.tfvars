@@ -39,3 +39,6 @@ media_namespace               = "ott-media"
 application_secret_name = "ott-platform/dev/application"
 ebs_csi_addon_version   = "v1.66.0-eksbuild.1"
 ebs_storage_class_name = "gp3"
+
+aws_profile                           = "ott-admin"
+load_balancer_controller_chart_version = "3.6.0"
