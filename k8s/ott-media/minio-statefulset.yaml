@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: minio
-        image: quay.io/minio/minio
+        image: rakeshv12/ott-minio
         ports:
           - containerPort: 9000
           - containerPort: 9001
