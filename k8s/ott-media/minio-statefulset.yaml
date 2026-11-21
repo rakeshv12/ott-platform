@@ -16,7 +16,8 @@ spec:
     spec:
       containers:
       - name: minio
-        image: rakeshv12/ott-minio
+        image: ott-minio:RELEASE.2025-10-15T17-29-55Z
+        imagePullPolicy: Never
         ports:
           - containerPort: 9000
           - containerPort: 9001
